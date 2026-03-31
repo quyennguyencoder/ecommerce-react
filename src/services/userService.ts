@@ -49,6 +49,13 @@ export const userService = {
     return response.data;
   },
 
+  async getMyProfile() {
+    const response = await api.get<ApiResponse<UserResponse>>(
+      `${USERS_PATH}/my-profile`
+    );
+    return response.data;
+  },
+
   async getAllUsers(params?: GetAllUsersParams) {
     const response = await api.get<ApiResponse<PaginationResponse<UserResponse>>>(
       USERS_PATH,
