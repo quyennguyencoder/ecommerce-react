@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 
 import { categoryService } from '../../services/categoryService';
 import { productService } from '../../services/productService';
@@ -121,26 +122,27 @@ export default function Navbar() {
   return (
     <nav className="border-b border-slate-200 bg-white shadow-[0_1px_0_rgba(16,24,40,0.04)]">
       <div className="mx-auto flex max-w-300 items-center gap-7 px-5 py-3.5 max-[900px]:flex-wrap max-[900px]:gap-3.5">
-        <div
+        <Link
+          to="/"
           className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-100/60 text-indigo-600"
-          aria-label="Brand"
+          aria-label="Go to home"
         >
           {BRAND_ICON}
-        </div>
+        </Link>
 
         <div className="flex items-center gap-4">
-          <button
-            type="button"
+          <Link
+            to="/"
             className="text-sm font-medium text-slate-800 transition hover:text-indigo-600"
           >
             Home
-          </button>
-          <button
-            type="button"
+          </Link>
+          <Link
+            to="/product"
             className="text-sm font-medium text-slate-800 transition hover:text-indigo-600"
           >
             Product
-          </button>
+          </Link>
           <div className="relative" ref={categoryRef}>
             <button
               type="button"
@@ -185,12 +187,12 @@ export default function Navbar() {
               </div>
             )}
           </div>
-          <button
-            type="button"
+          <Link
+            to="/notification"
             className="text-sm font-medium text-slate-800 transition hover:text-indigo-600"
           >
             Notification
-          </button>
+          </Link>
         </div>
 
         <div className="ml-auto flex items-center gap-3.5 max-[900px]:w-full max-[900px]:justify-between">
@@ -212,13 +214,13 @@ export default function Navbar() {
             </button>
           </div>
 
-          <button
-            type="button"
+          <Link
+            to="/cart"
             className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 transition hover:text-slate-900"
             aria-label="Cart"
           >
             {CART_ICON}
-          </button>
+          </Link>
 
           <div className="relative" ref={avatarRef}>
             <button
@@ -233,21 +235,24 @@ export default function Navbar() {
             </button>
             {isAvatarOpen && (
               <div className="absolute right-0 top-[calc(100%+10px)] z-10 min-w-45 rounded-xl border border-slate-200 bg-white p-1.5 shadow-[0_16px_30px_rgba(15,23,42,0.08)]">
-                <button
-                  type="button"
-                  className="w-full rounded-lg px-2.5 py-2 text-left text-sm text-slate-800 transition hover:bg-slate-100"
+                <Link
+                  to="/profile"
+                  className="block w-full rounded-lg px-2.5 py-2 text-left text-sm text-slate-800 transition hover:bg-slate-100"
+                  onClick={() => setIsAvatarOpen(false)}
                 >
                   Profile
-                </button>
-                <button
-                  type="button"
-                  className="w-full rounded-lg px-2.5 py-2 text-left text-sm text-slate-800 transition hover:bg-slate-100"
+                </Link>
+                <Link
+                  to="/orders"
+                  className="block w-full rounded-lg px-2.5 py-2 text-left text-sm text-slate-800 transition hover:bg-slate-100"
+                  onClick={() => setIsAvatarOpen(false)}
                 >
                   Orders
-                </button>
+                </Link>
                 <button
                   type="button"
                   className="w-full rounded-lg px-2.5 py-2 text-left text-sm text-slate-800 transition hover:bg-slate-100"
+                  onClick={() => setIsAvatarOpen(false)}
                 >
                   Logout
                 </button>
