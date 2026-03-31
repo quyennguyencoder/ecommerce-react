@@ -7,6 +7,7 @@ import Home from './pages/Home';
 import Orders from './pages/Orders';
 import Profile from './pages/Profile';
 import Product from './pages/Product';
+import ProductDetail from './pages/ProductDetail';
 import Notification from './pages/Notification';
 
 const AppLayout = () => (
@@ -24,6 +25,7 @@ function App() {
         <Route element={<AppLayout />}>
           <Route index element={<Home />} />
           <Route path="product" element={<Product />} />
+          <Route path="product/:id" element={<ProductDetail />} />
           <Route path="cart" element={<Cart />} />
           <Route path="profile" element={<Profile />} />
           <Route path="orders" element={<Orders />} />
