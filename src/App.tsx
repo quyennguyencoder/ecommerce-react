@@ -48,6 +48,7 @@ function App() {
            <Route index element={<Placeholder title="Trang Tổng Quan Tổng Hợp (Dashboard)" />} />
            <Route path="products" element={<AdminProducts />} />
            <Route path="products/create" element={<ProductForm />} />
+           <Route path="products/:id/edit" element={<ProductForm />} />
            <Route path="products/:id/variants" element={<ProductVariants />} />
            <Route path="orders" element={<Placeholder title="Quản lý Đơn hàng (Duyệt đơn, Đóng gói)" />} />
            <Route path="attributes" element={<AttributesConfig />} />

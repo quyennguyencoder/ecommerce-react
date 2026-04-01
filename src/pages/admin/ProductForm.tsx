@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useParams } from 'react-router-dom';
 import { ArrowLeft, Save, Image as ImageIcon, AlertCircle } from 'lucide-react';
 
 import { productService } from '../../services/productService';
 import { categoryService } from '../../services/categoryService';
 import type { CategoryResponse } from '../../types';
+import { getImageUrl } from '../../utils/image';
 
 const productSchema = z.object({
   name: z.string().min(5, 'Tên sản phẩm phải có ít nhất 5 ký tự').max(100, 'Tên quá dài (tối đa 100 kí tự)'),
@@ -22,15 +23,21 @@ type ProductFormValues = z.infer<typeof productSchema>;
 
 const ProductForm = () => {
   const navigate = useNavigate();
+  const { id: idParam } = useParams();
+  const productId = idParam ? Number(idParam) : NaN;
+  const isEditMode = Number.isFinite(productId) && productId > 0;
+
   const [categories, setCategories] = useState<CategoryResponse[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoadingProduct, setIsLoadingProduct] = useState(isEditMode);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // Trạng thái độc lập cho Ảnh Thumbnail (Vì API nhận file riêng qua form data)
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
 
-  const { register, handleSubmit, formState: { errors } } = useForm<ProductFormValues>({
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema) as any,
     defaultValues: {
       name: '',
@@ -55,10 +62,44 @@ const ProductForm = () => {
     fetchCats();
   }, []);
 
-  // Hủy Preview URL cũ để tránh rò rỉ bộ nhớ (Memory Leak)
+  // Chế độ sửa: tải sản phẩm và đổ form
+  useEffect(() => {
+    if (!isEditMode) return;
+
+    const load = async () => {
+      try {
+        setIsLoadingProduct(true);
+        setLoadError(null);
+        const res = await productService.getProductById(productId);
+        const p = res.data;
+        if (!p) {
+          setLoadError('Không tìm thấy sản phẩm.');
+          return;
+        }
+        setThumbnailFile(null);
+        reset({
+          name: p.name,
+          description: p.description || '',
+          basePrice: p.basePrice ?? 0,
+          categoryId: p.categoryId,
+          isHot: p.isHot,
+          active: p.active,
+        });
+        setThumbnailPreview(p.thumbnail ? getImageUrl(p.thumbnail) : null);
+      } catch (err) {
+        console.error(err);
+        setLoadError('Không tải được sản phẩm. Vui lòng thử lại.');
+      } finally {
+        setIsLoadingProduct(false);
+      }
+    };
+    load();
+  }, [isEditMode, productId, reset]);
+
+  // Hủy Preview URL blob cũ để tránh rò rỉ bộ nhớ (Memory Leak)
   useEffect(() => {
     return () => {
-      if (thumbnailPreview) URL.revokeObjectURL(thumbnailPreview);
+      if (thumbnailPreview?.startsWith('blob:')) URL.revokeObjectURL(thumbnailPreview);
     };
   }, [thumbnailPreview]);
 
@@ -86,41 +127,97 @@ const ProductForm = () => {
       setIsSubmitting(true);
       setErrorMsg(null);
 
-      // BƯỚC 1: Khởi tạo sản phẩm với dạng văn bản JSON
-      const createRes = await productService.createProduct({
-        name: data.name,
-        description: data.description || undefined,
-        basePrice: data.basePrice ? Number(data.basePrice) : undefined,
-        categoryId: Number(data.categoryId),
-        isHot: data.isHot,
-        active: data.active,
-      });
+      if (isEditMode) {
+        await productService.updateProduct(productId, {
+          name: data.name,
+          description: data.description || undefined,
+          basePrice: data.basePrice !== undefined && data.basePrice !== null
+            ? Number(data.basePrice)
+            : undefined,
+          categoryId: Number(data.categoryId),
+          isHot: data.isHot,
+          active: data.active,
+        });
 
-      const newProductId = createRes.data?.id;
-      if (!newProductId) {
-        throw new Error('Sản phẩm tạo bị thất bại ở Backend.');
-      }
-
-      // BƯỚC 2: Nếu tạo Ok và có chọn ảnh -> Up ảnh bổ sung
-      if (thumbnailFile) {
-        try {
-          await productService.updateProductThumbnail(newProductId, thumbnailFile);
-        } catch (uploadErr) {
-          console.error('Thumbnail Error', uploadErr);
-          throw new Error('Đã tạo thành công SP nhưng cập nhật ảnh bị lỗi. Xin hãy sửa ảnh sau.');
+        if (thumbnailFile) {
+          try {
+            await productService.updateProductThumbnail(productId, thumbnailFile);
+          } catch (uploadErr) {
+            console.error('Thumbnail Error', uploadErr);
+            throw new Error('Đã cập nhật thông tin nhưng tải ảnh lên thất bại. Bạn có thể thử lại sau.');
+          }
         }
+
+        alert('Đã cập nhật sản phẩm thành công!');
+      } else {
+        // BƯỚC 1: Khởi tạo sản phẩm với dạng văn bản JSON
+        const createRes = await productService.createProduct({
+          name: data.name,
+          description: data.description || undefined,
+          basePrice: data.basePrice ? Number(data.basePrice) : undefined,
+          categoryId: Number(data.categoryId),
+          isHot: data.isHot,
+          active: data.active,
+        });
+
+        const newProductId = createRes.data?.id;
+        if (!newProductId) {
+          throw new Error('Sản phẩm tạo bị thất bại ở Backend.');
+        }
+
+        // BƯỚC 2: Nếu tạo Ok và có chọn ảnh -> Up ảnh bổ sung
+        if (thumbnailFile) {
+          try {
+            await productService.updateProductThumbnail(newProductId, thumbnailFile);
+          } catch (uploadErr) {
+            console.error('Thumbnail Error', uploadErr);
+            throw new Error('Đã tạo thành công SP nhưng cập nhật ảnh bị lỗi. Xin hãy sửa ảnh sau.');
+          }
+        }
+
+        alert('Đã thêm sản phẩm thành công!');
       }
 
-      alert('Đã thêm sản phẩm thành công!');
       navigate('/admin/products');
 
     } catch (err: any) {
       console.error(err);
-      setErrorMsg(err.message || 'Lỗi kết nối. Không thể tạo sản phẩm lúc này.');
+      setErrorMsg(
+        err.message ||
+          (isEditMode
+            ? 'Lỗi kết nối. Không thể cập nhật sản phẩm lúc này.'
+            : 'Lỗi kết nối. Không thể tạo sản phẩm lúc này.')
+      );
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  if (isEditMode && isLoadingProduct) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[40vh] gap-4 text-slate-500">
+        <div className="w-10 h-10 border-4 border-slate-200 border-t-indigo-600 rounded-full animate-spin" />
+        <p className="font-medium">Đang tải sản phẩm...</p>
+      </div>
+    );
+  }
+
+  if (isEditMode && loadError) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-4 pb-4 border-b border-slate-200">
+          <Link to="/admin/products" className="p-2 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors text-slate-500 hover:text-slate-800">
+            <ArrowLeft size={20} />
+          </Link>
+          <h1 className="text-2xl font-bold text-slate-900">Chỉnh sửa Sản phẩm</h1>
+        </div>
+        <div className="bg-rose-50 border border-rose-200 text-rose-700 p-4 rounded-xl flex gap-3 items-start">
+          <AlertCircle size={22} className="shrink-0 mt-0.5" />
+          <p className="font-medium">{loadError}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit(onSubmit as any)} className="space-y-6">
@@ -131,7 +228,9 @@ const ProductForm = () => {
           <Link to="/admin/products" className="p-2 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors text-slate-500 hover:text-slate-800">
             <ArrowLeft size={20} />
           </Link>
-          <h1 className="text-2xl font-bold text-slate-900">Thêm mới Sản phẩm</h1>
+          <h1 className="text-2xl font-bold text-slate-900">
+            {isEditMode ? 'Chỉnh sửa Sản phẩm' : 'Thêm mới Sản phẩm'}
+          </h1>
         </div>
         <button 
           type="submit"
@@ -143,7 +242,7 @@ const ProductForm = () => {
           ) : (
             <Save size={20} />
           )}
-          {isSubmitting ? 'Đang lưu...' : 'Lưu sản phẩm'}
+          {isSubmitting ? 'Đang lưu...' : isEditMode ? 'Cập nhật sản phẩm' : 'Lưu sản phẩm'}
         </button>
       </div>
 
