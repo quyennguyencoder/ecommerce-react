@@ -12,6 +12,11 @@ import ProductDetail from './pages/ProductDetail';
 import Notification from './pages/Notification';
 import Checkout from './pages/Checkout';
 
+import AdminProducts from './pages/admin/Products';
+import ProductForm from './pages/admin/ProductForm';
+import ProductVariants from './pages/admin/ProductVariants';
+import AttributesConfig from './pages/admin/AttributesConfig';
+
 // Placeholder Component for unbuilt pages
 const Placeholder = ({ title }: { title: string }) => (
   <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center justify-center min-h-[50vh] text-center">
@@ -41,9 +46,11 @@ function App() {
         {/* Quản trị viên - Admin Layout */}
         <Route path="/admin" element={<AdminLayout />}>
            <Route index element={<Placeholder title="Trang Tổng Quan Tổng Hợp (Dashboard)" />} />
-           <Route path="products" element={<Placeholder title="Quản lý Sản phẩm (Danh sách, Thêm, Sửa, Xóa)" />} />
+           <Route path="products" element={<AdminProducts />} />
+           <Route path="products/create" element={<ProductForm />} />
+           <Route path="products/:id/variants" element={<ProductVariants />} />
            <Route path="orders" element={<Placeholder title="Quản lý Đơn hàng (Duyệt đơn, Đóng gói)" />} />
-           <Route path="attributes" element={<Placeholder title="Quản lý Biến thể Thuộc tính" />} />
+           <Route path="attributes" element={<AttributesConfig />} />
            <Route path="users" element={<Placeholder title="Quản lý Người dùng hệ thống" />} />
            <Route path="settings" element={<Placeholder title="Cài đặt hệ thống Cửa hàng" />} />
         </Route>
