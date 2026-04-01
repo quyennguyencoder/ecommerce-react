@@ -1,4 +1,4 @@
-import { Gender, ShippingMethod } from './enums';
+import { Gender, ShippingMethod, PaymentMethod } from './enums';
 
 export interface AuthLoginRequest {
   username: string;
@@ -99,6 +99,7 @@ export interface OrderCreateRequest {
   total: number;
   couponCode?: string;
   cartItemIds: number[];
+  paymentMethod: PaymentMethod;
 }
 
 export interface ProductCreateRequest {

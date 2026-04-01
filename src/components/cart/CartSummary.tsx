@@ -1,3 +1,5 @@
+import { useNavigate } from 'react-router-dom';
+
 type CartSummaryProps = {
   totalItems: number;
   totalPrice: number;
@@ -13,6 +15,9 @@ const CartSummary = ({
   onClear,
   formatMoney,
 }: CartSummaryProps) => {
+  const navigate = useNavigate();
+  const isEmpty = totalItems === 0;
+
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-6">
       <h2 className="text-lg font-semibold text-slate-900">Order Summary</h2>
@@ -31,14 +36,16 @@ const CartSummary = ({
       <div className="mt-6 flex flex-col gap-3">
         <button
           type="button"
-          className="rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
+          onClick={() => navigate('/checkout')}
+          disabled={isEmpty}
+          className="rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Checkout
         </button>
         <button
           type="button"
           onClick={onClear}
-          disabled={isClearing}
+          disabled={isClearing || isEmpty}
           className="rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
           Clear cart

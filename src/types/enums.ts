@@ -23,3 +23,20 @@ export enum ShippingMethod {
   EXPRESS = 'EXPRESS',
 }
 
+export enum PaymentMethod {
+  COD = 'COD',
+  VNPAY = 'VNPAY',
+}
+
+export enum PaymentStatus {
+  UNPAID = 'UNPAID',
+  PAID = 'PAID',
+  REFUNDED = 'REFUNDED',
+}
+
+export enum TransactionStatus {
+  PENDING = 'PENDING',
+  SUCCESS = 'SUCCESS',
+  FAILED = 'FAILED',
+}
+

@@ -1,6 +1,7 @@
 import type { CartItemResponse } from '../../types';
 
 import QuantityControl from './QuantityControl.tsx';
+import { getImageUrl } from '../../utils/image';
 
 type CartItemProps = {
   item: CartItemResponse;
@@ -22,18 +23,12 @@ const CartItem = ({
   return (
     <div className="flex flex-col gap-4 border-b border-slate-200 py-5 sm:flex-row sm:items-center">
       <div className="flex items-center gap-4">
-        <div className="h-16 w-16 overflow-hidden rounded-xl bg-slate-100">
-          {item.image ? (
-            <img
-              src={item.image}
-              alt={item.productName}
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center text-xs text-slate-400">
-              No image
-            </div>
-          )}
+        <div className="h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-slate-100">
+          <img 
+            src={getImageUrl(item.image)} 
+            alt={item.productName} 
+            className="h-full w-full object-cover" 
+          />
         </div>
         <div>
           <p className="text-sm font-semibold text-slate-900">{item.productName}</p>

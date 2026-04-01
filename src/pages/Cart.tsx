@@ -127,7 +127,10 @@ const Cart = () => {
     }
   }, [showToast]);
 
-  const cartItems = cart?.cartItems ?? [];
+  const cartItems = useMemo(() => {
+    if (!cart?.cartItems) return [];
+    return [...cart.cartItems].sort((a, b) => a.id - b.id);
+  }, [cart?.cartItems]);
   const totals = useMemo(
     () => ({
       totalItems: cart?.totalItems ?? 0,
