@@ -1,25 +1,9 @@
-import axios from 'axios';
-
 import type { ApiResponse, ProductImageResponse } from '../types';
 
-const API_BASE_URL =
-  (import.meta as { env: { VITE_API_BASE_URL?: string } }).env
-    .VITE_API_BASE_URL ?? 'http://localhost:8080';
-
-const api = axios.create({
-  baseURL: API_BASE_URL,
-});
+import api from './api';
 
 const PRODUCT_IMAGES_PATH = '/api/v1/product-images';
-
 export const productImageService = {
-  async getProductImageById(id: number) {
-    const response = await api.get<ApiResponse<ProductImageResponse>>(
-      `${PRODUCT_IMAGES_PATH}/${id}`
-    );
-    return response.data;
-  },
-
   async getProductImagesByProductId(productId: number) {
     const response = await api.get<ApiResponse<ProductImageResponse[]>>(
       `${PRODUCT_IMAGES_PATH}/product/${productId}`
@@ -49,13 +33,6 @@ export const productImageService = {
       { headers: { 'Content-Type': 'multipart/form-data' } }
     );
     return response.data;
-  },
-
-  async getProductImage(imageName: string) {
-    const response = await api.get(`${PRODUCT_IMAGES_PATH}/image/${imageName}`,
-      { responseType: 'blob' }
-    );
-    return response.data as Blob;
   },
 
   async deleteProductImage(id: number) {

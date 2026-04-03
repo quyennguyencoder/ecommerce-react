@@ -11,6 +11,7 @@ import OrderSummary from '../components/checkout/OrderSummary';
 import { ShippingMethod, PaymentMethod, Gender } from '../types/enums';
 import { cartService } from '../services/cartService';
 import { orderService } from '../services/orderService';
+import { paymentService } from '../services/paymentService';
 import type { CartResponse } from '../types';
 
 const checkoutSchema = z.object({
@@ -146,14 +147,27 @@ const Checkout = () => {
       };
 
       const res = await orderService.createOrder(orderRequest);
-      
-      const paymentUrl = res.data?.paymentUrl;
+      const orderId = res.data?.id;
       const responsePaymentMethod = res.data?.paymentMethod || data.paymentMethod;
 
-      // Nếu không phải COD và có link thanh toán thì redirect
-      if (responsePaymentMethod !== PaymentMethod.COD && paymentUrl) {
-         window.location.href = paymentUrl;
-         return; // Không setIsLoading(false) vì đang redirect
+      if (responsePaymentMethod === PaymentMethod.VNPAY) {
+        if (!orderId) {
+          throw new Error('Không tìm thấy mã đơn hàng để tạo thanh toán VNPAY');
+        }
+
+        const paymentRes = await paymentService.createPaymentUrl({
+          orderId,
+          bankCode: '',
+          language: 'vn',
+        });
+        
+        const paymentUrl = paymentRes.data?.paymentUrl;
+        if (paymentUrl) {
+          window.location.href = paymentUrl;
+          return; // Không setIsLoading(false) vì đang redirect
+        }
+
+        throw new Error('Không lấy được đường dẫn thanh toán VNPAY');
       }
 
       alert('Đặt hàng thành công!');

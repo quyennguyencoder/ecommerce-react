@@ -1,7 +1,7 @@
 import { Gender, ShippingMethod, PaymentMethod } from './enums';
 
 export interface AuthLoginRequest {
-  username: string;
+  emailOrPhone: string;
   password: string;
 }
 
@@ -9,17 +9,9 @@ export interface AuthRefreshTokenRequest {
   refreshToken: string;
 }
 
-export interface UserRegisterByEmailRequest {
+export interface UserCreateRequest {
   email: string;
-  password: string;
-  name: string;
-  gender?: Gender;
-  address?: string;
-  dob?: string;
-}
-
-export interface UserRegisterByPhoneRequest {
-  phone?: string;
+  phone: string;
   password: string;
   name: string;
   gender?: Gender;
@@ -135,4 +127,10 @@ export interface ProductVariantUpdateRequest {
   stock?: number;
   productId?: number;
   attributeValueIds?: number[];
+}
+
+export interface PaymentUrlCreateRequest {
+  orderId: number;
+  bankCode: string;
+  language: string;
 }

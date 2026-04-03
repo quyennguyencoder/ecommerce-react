@@ -1,22 +1,13 @@
-import axios from 'axios';
-
 import type {
   ApiResponse,
   PaginationResponse,
   UserChangePasswordRequest,
-  UserRegisterByEmailRequest,
-  UserRegisterByPhoneRequest,
+  UserCreateRequest,
   UserResponse,
   UserUpdateRequest,
 } from '../types';
 
-const API_BASE_URL =
-  (import.meta as { env: { VITE_API_BASE_URL?: string } }).env
-    .VITE_API_BASE_URL ?? 'http://localhost:8080';
-
-const api = axios.create({
-  baseURL: API_BASE_URL,
-});
+import api from './api';
 
 const USERS_PATH = '/api/v1/users';
 
@@ -28,17 +19,9 @@ export interface GetAllUsersParams {
 }
 
 export const userService = {
-  async registerByEmail(payload: UserRegisterByEmailRequest) {
+  async createUser(payload: UserCreateRequest) {
     const response = await api.post<ApiResponse<UserResponse>>(
-      `${USERS_PATH}/register/email`,
-      payload
-    );
-    return response.data;
-  },
-
-  async registerByPhone(payload: UserRegisterByPhoneRequest) {
-    const response = await api.post<ApiResponse<UserResponse>>(
-      `${USERS_PATH}/register/phone`,
+      `${USERS_PATH}`,
       payload
     );
     return response.data;
@@ -104,13 +87,6 @@ export const userService = {
       { headers: { 'Content-Type': 'multipart/form-data' } }
     );
     return response.data;
-  },
-
-  async getAvatar(id: number) {
-    const response = await api.get(`${USERS_PATH}/${id}/avatar`, {
-      responseType: 'blob',
-    });
-    return response.data as Blob;
   },
 
   async changePassword(id: number, payload: UserChangePasswordRequest) {

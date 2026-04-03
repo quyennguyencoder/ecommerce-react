@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Minus, Plus, ShoppingCart, Heart } from 'lucide-react';
 import type { ProductVariantResponse } from '../../../types/responses';
 
@@ -12,6 +12,10 @@ interface ProductActionsProps {
 const ProductActions = ({ selectedVariant, onAddToCart, onBuyNow, isAddingToCart = false }: ProductActionsProps) => {
   const [quantity, setQuantity] = useState(1);
   const [isSaved, setIsSaved] = useState(false); // Just for UI mock
+
+  useEffect(() => {
+    setQuantity(1);
+  }, [selectedVariant?.id]);
 
   const handleDecrease = () => setQuantity((prev) => Math.max(1, prev - 1));
   const handleIncrease = () => {

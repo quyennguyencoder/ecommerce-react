@@ -1,5 +1,3 @@
-import axios from 'axios';
-
 import type {
   ApiResponse,
   PaginationResponse,
@@ -8,13 +6,7 @@ import type {
   ProductUpdateRequest,
 } from '../types';
 
-const API_BASE_URL =
-  (import.meta as { env: { VITE_API_BASE_URL?: string } }).env
-    .VITE_API_BASE_URL ?? 'http://localhost:8080';
-
-const api = axios.create({
-  baseURL: API_BASE_URL,
-});
+import api from './api';
 
 const PRODUCTS_PATH = '/api/v1/products';
 
@@ -68,13 +60,6 @@ export const productService = {
       { headers: { 'Content-Type': 'multipart/form-data' } }
     );
     return response.data;
-  },
-
-  async getProductThumbnail(id: number) {
-    const response = await api.get(`${PRODUCTS_PATH}/${id}/thumbnail`, {
-      responseType: 'blob',
-    });
-    return response.data as Blob;
   },
 
   async deleteProduct(id: number) {

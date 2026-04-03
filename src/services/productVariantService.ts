@@ -1,5 +1,3 @@
-import axios from 'axios';
-
 import type {
   ApiResponse,
   ProductVariantCreateRequest,
@@ -7,13 +5,7 @@ import type {
   ProductVariantUpdateRequest,
 } from '../types';
 
-const API_BASE_URL =
-  (import.meta as { env: { VITE_API_BASE_URL?: string } }).env
-    .VITE_API_BASE_URL ?? 'http://localhost:8080';
-
-const api = axios.create({
-  baseURL: API_BASE_URL,
-});
+import api from './api';
 
 const PRODUCT_VARIANTS_PATH = '/api/v1/product-variants';
 
@@ -72,12 +64,5 @@ export const productVariantService = {
       { headers: { 'Content-Type': 'multipart/form-data' } }
     );
     return response.data;
-  },
-
-  async getProductVariantImage(id: number) {
-    const response = await api.get(`${PRODUCT_VARIANTS_PATH}/${id}/image`, {
-      responseType: 'blob',
-    });
-    return response.data as Blob;
   },
 };

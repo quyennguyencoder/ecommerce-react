@@ -15,7 +15,6 @@ import type {
 const Profile = () => {
   const [profile, setProfile] = useState<UserResponse | null>(null);
   const [draftProfile, setDraftProfile] = useState<UserUpdateRequest | null>(null);
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [avatarError, setAvatarError] = useState('');
@@ -112,34 +111,6 @@ const Profile = () => {
     fetchProfile();
   }, [buildDraft]);
 
-  useEffect(() => {
-    const revokeUrl = () => {
-      if (avatarUrl) {
-        URL.revokeObjectURL(avatarUrl);
-      }
-    };
-
-    return revokeUrl;
-  }, [avatarUrl]);
-
-  useEffect(() => {
-    const fetchAvatar = async (userId: number) => {
-      try {
-        setAvatarError('');
-        const avatarBlob = await userService.getAvatar(userId);
-        const nextUrl = URL.createObjectURL(avatarBlob);
-        setAvatarUrl(nextUrl);
-      } catch (avatarFetchError) {
-        console.error('Failed to load avatar', avatarFetchError);
-        setAvatarUrl(null);
-      }
-    };
-
-    if (profile?.id) {
-      fetchAvatar(profile.id);
-    }
-  }, [profile?.id]);
-
   const handleAvatarChange = async (file: File) => {
     if (!profile?.id) {
       return;
@@ -160,9 +131,6 @@ const Profile = () => {
       if (nextProfile) {
         setDraftProfile(buildDraft(nextProfile));
       }
-      const avatarBlob = await userService.getAvatar(profile.id);
-      const nextUrl = URL.createObjectURL(avatarBlob);
-      setAvatarUrl(nextUrl);
       setAvatarSuccess('Cap nhat avatar thanh cong.');
       showToast({ type: 'success', message: 'Cap nhat avatar thanh cong.' });
       window.setTimeout(() => {
@@ -431,7 +399,7 @@ const Profile = () => {
           <>
             <ProfileHeader
               user={profile}
-              avatarUrl={avatarUrl}
+              avatarUrl={profile.avatar ?? null}
               onAvatarChange={handleAvatarChange}
               isUploading={isUploading}
               uploadError={avatarError}

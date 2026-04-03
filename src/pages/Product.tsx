@@ -1,10 +1,22 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 
 import ProductList from '../components/product/ProductList';
 import { productService } from '../services/productService';
 import type { ProductResponse } from '../types';
 
 const Product = () => {
+  const [searchParams] = useSearchParams();
+  const keyword = searchParams.get('keyword')?.trim() || undefined;
+  const categoryIdRaw = searchParams.get('categoryId');
+  const categoryId =
+    categoryIdRaw != null &&
+    categoryIdRaw !== '' &&
+    !Number.isNaN(Number(categoryIdRaw)) &&
+    Number(categoryIdRaw) > 0
+      ? Number(categoryIdRaw)
+      : undefined;
+
   const [products, setProducts] = useState<ProductResponse[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -21,6 +33,8 @@ const Product = () => {
         const response = await productService.getAllProducts({
           page: currentPage,
           size: pageSize,
+          ...(keyword ? { keyword } : {}),
+          ...(categoryId != null ? { categoryId } : {}),
         });
         const content = response.data?.content ?? [];
         const totalElements = response.data?.totalElements;
@@ -41,7 +55,7 @@ const Product = () => {
     };
 
     fetchProducts();
-  }, [currentPage]);
+  }, [currentPage, keyword, categoryId]);
 
   const handlePageChange = (page: number) => {
     if (page < 0 || page >= totalPages || page === currentPage) {
@@ -51,13 +65,21 @@ const Product = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const filterHint = [keyword && `Từ khóa: "${keyword}"`, categoryId && `Danh mục ID: ${categoryId}`]
+    .filter(Boolean)
+    .join(' · ');
+
   return (
     <main className="mx-auto w-full max-w-300 flex-1 px-6 py-10">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-semibold text-slate-900">Product</h1>
+          <h1 className="text-3xl font-semibold text-slate-900">Sản phẩm</h1>
           <p className="mt-1 text-sm text-slate-500">
-            Discover curated items picked for you.
+            {filterHint ? (
+              <span>Đang lọc: {filterHint}</span>
+            ) : (
+              <span>Khám phá danh sách sản phẩm.</span>
+            )}
           </p>
         </div>
       </div>
@@ -76,7 +98,7 @@ const Product = () => {
 
       {!isLoading && !errorMessage && products.length === 0 && (
         <div className="rounded-xl border border-dashed border-slate-200 px-4 py-10 text-center text-sm text-slate-500">
-          No products available yet.
+          Không có sản phẩm phù hợp bộ lọc.
         </div>
       )}
 

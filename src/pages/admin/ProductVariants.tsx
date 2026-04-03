@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { 
   ArrowLeft, Plus, Trash2, Image as ImageIcon,
-  Package, DollarSign, Fingerprint, Save, RefreshCcw, Layers
+  Package, DollarSign, Fingerprint, Save, RefreshCcw, Layers, Pencil, X
 } from 'lucide-react';
 
 import { productService } from '../../services/productService';
@@ -38,6 +38,8 @@ const ProductVariants = () => {
   // Variant Image State
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
+
+  const [editingVariantId, setEditingVariantId] = useState<number | null>(null);
 
   const { register, handleSubmit, formState: { errors }, watch, setValue, reset } = useForm<VariantFormValues>({
     resolver: zodResolver(variantSchema) as any,
@@ -74,11 +76,11 @@ const ProductVariants = () => {
     fetchData();
   }, [productId]);
 
-  // Cleanup Image URL
+  // Cleanup blob preview URL (không revoke URL ảnh từ server)
   useEffect(() => {
     return () => {
-       if (thumbnailPreview) URL.revokeObjectURL(thumbnailPreview);
-    }
+      if (thumbnailPreview?.startsWith('blob:')) URL.revokeObjectURL(thumbnailPreview);
+    };
   }, [thumbnailPreview]);
 
   // Group attributes for nice display (e.g. Color -> [Red, Blue], Storage -> [64GB, 128GB])
@@ -117,12 +119,56 @@ const ProductVariants = () => {
     setThumbnailPreview(URL.createObjectURL(file));
   };
 
-  const handleCreateVariant = async (data: VariantFormValues) => {
+  const cancelEdit = () => {
+    setEditingVariantId(null);
+    reset({ sku: '', price: 0, stock: 0, attributeValueIds: [] });
+    setThumbnailFile(null);
+    setThumbnailPreview(null);
+    setErrorMsg(null);
+  };
+
+  const startEditVariant = (v: ProductVariantResponse) => {
+    setErrorMsg(null);
+    setEditingVariantId(v.id);
+    reset({
+      sku: v.sku,
+      price: v.price,
+      stock: v.stock,
+      attributeValueIds: [...v.attributeValueIds],
+    });
+    setThumbnailFile(null);
+    setThumbnailPreview(v.image ? getImageUrl(v.image) : null);
+  };
+
+  const handleVariantSubmit = async (data: VariantFormValues) => {
     try {
       setIsSubmitting(true);
       setErrorMsg(null);
 
-      // Bước 1: Tạo Variant
+      if (editingVariantId != null) {
+        await productVariantService.updateProductVariant(editingVariantId, {
+          sku: data.sku,
+          price: data.price,
+          stock: data.stock,
+          productId,
+          attributeValueIds: data.attributeValueIds,
+        });
+
+        if (thumbnailFile) {
+          try {
+            await productVariantService.uploadProductVariantImage(editingVariantId, thumbnailFile);
+          } catch (imgErr) {
+            console.error('Lỗi upload ảnh Variant', imgErr);
+            alert('Đã cập nhật thông tin nhưng không tải được ảnh mới. Bạn có thể sửa lại sau.');
+          }
+        }
+
+        cancelEdit();
+        await fetchData();
+        return;
+      }
+
+      // Tạo mới
       const createRes = await productVariantService.createProductVariant({
         productId,
         sku: data.sku,
@@ -134,25 +180,22 @@ const ProductVariants = () => {
       const newVariantId = createRes.data?.id;
       if (!newVariantId) throw new Error('Thất bại khi tạo Phiên bản.');
 
-      // Bước 2: Tải lên Ảnh
       if (thumbnailFile) {
         try {
           await productVariantService.uploadProductVariantImage(newVariantId, thumbnailFile);
         } catch (imgErr) {
-          console.error("Lỗi upload ảnh Variant", imgErr);
+          console.error('Lỗi upload ảnh Variant', imgErr);
           alert('Biến thể đã được tạo nhưng Không thể cập nhật ảnh! Hãy thử xóa và làm lại sau.');
         }
       }
 
-      // Reset form & Refresh dữ liệu
       reset();
       setThumbnailFile(null);
       setThumbnailPreview(null);
-      await fetchData(); 
-
+      await fetchData();
     } catch (err: any) {
       console.error(err);
-      setErrorMsg(err.message || 'Có lỗi xảy ra khi tạo mã sản phẩm này.');
+      setErrorMsg(err.message || 'Có lỗi xảy ra khi lưu biến thể.');
     } finally {
       setIsSubmitting(false);
     }
@@ -162,6 +205,7 @@ const ProductVariants = () => {
     if (window.confirm(`Bạn có chắc muốn xoá phiên bản [${sku}]?\nHành động này không thể hoàn tác.`)) {
       try {
         await productVariantService.deleteProductVariant(id);
+        if (editingVariantId === id) cancelEdit();
         setVariants(prev => prev.filter(v => v.id !== id));
       } catch (err) {
         alert('Xóa thất bại! Phiên bản này có thể đang kẹt trong một đơn hàng.');
@@ -227,7 +271,7 @@ const ProductVariants = () => {
                       <th className="py-3 px-4 font-semibold">Mã (SKU)</th>
                       <th className="py-3 px-4 font-semibold">Tồn Kho</th>
                       <th className="py-3 px-4 font-semibold">Thuộc tính</th>
-                      <th className="py-3 px-4 font-semibold text-right">Thao tác</th>
+                      <th className="py-3 px-4 font-semibold text-right w-28">Thao tác</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -258,13 +302,24 @@ const ProductVariants = () => {
                             </span>
                         </td>
                         <td className="py-3 px-4 text-right">
-                          <button 
-                            onClick={() => handleDeleteVariant(v.id, v.sku)}
-                            className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-md transition-colors"
-                            title="Xóa biến thể"
-                          >
-                            <Trash2 size={18} />
-                          </button>
+                          <div className="flex items-center justify-end gap-1">
+                            <button
+                              type="button"
+                              onClick={() => startEditVariant(v)}
+                              className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors"
+                              title="Sửa biến thể"
+                            >
+                              <Pencil size={18} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteVariant(v.id, v.sku)}
+                              className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-md transition-colors"
+                              title="Xóa biến thể"
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -277,12 +332,30 @@ const ProductVariants = () => {
 
         {/* Sidebar / Form Create */}
         <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 lg:sticky lg:top-6">
-          <form onSubmit={handleSubmit(handleCreateVariant as any)} className="space-y-5">
-            <div>
-              <h2 className="font-bold text-slate-800 flex items-center gap-2 mb-4">
-                <Plus className="text-indigo-600 border border-indigo-200 rounded-md p-0.5" size={22} />
-                Thêm mã hàng mới
+          <form onSubmit={handleSubmit(handleVariantSubmit as any)} className="space-y-5">
+            <div className="flex items-start justify-between gap-2 mb-4">
+              <h2 className="font-bold text-slate-800 flex items-center gap-2">
+                {editingVariantId != null ? (
+                  <>
+                    <Pencil className="text-indigo-600 border border-indigo-200 rounded-md p-0.5" size={22} />
+                    Chỉnh sửa biến thể
+                  </>
+                ) : (
+                  <>
+                    <Plus className="text-indigo-600 border border-indigo-200 rounded-md p-0.5" size={22} />
+                    Thêm mã hàng mới
+                  </>
+                )}
               </h2>
+              {editingVariantId != null && (
+                <button
+                  type="button"
+                  onClick={cancelEdit}
+                  className="flex items-center gap-1 text-sm font-medium text-slate-600 px-2 py-1 rounded-lg hover:bg-slate-100 shrink-0"
+                >
+                  <X size={16} /> Hủy
+                </button>
+              )}
             </div>
 
             {/* Form Fields */}
@@ -392,7 +465,7 @@ const ProductVariants = () => {
                 className="w-full py-3 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition-colors shadow-sm disabled:opacity-70 disabled:cursor-not-allowed flex justify-center items-center gap-2 mt-4"
              >
                 {isSubmitting ? <RefreshCcw size={18} className="animate-spin" /> : <Save size={18} />}
-                Tạo Biến thể mới
+                {editingVariantId != null ? 'Cập nhật biến thể' : 'Tạo Biến thể mới'}
              </button>
           </form>
         </div>

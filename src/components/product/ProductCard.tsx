@@ -1,7 +1,5 @@
-import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
-import { productService } from '../../services/productService';
 import type { ProductResponse } from '../../types';
 
 type ProductCardProps = {
@@ -15,37 +13,7 @@ const formatPrice = (value: number) =>
   }).format(value);
 
 export default function ProductCard({ product }: ProductCardProps) {
-  const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null);
-
-  useEffect(() => {
-    let isActive = true;
-    let objectUrl: string | null = null;
-
-    const loadThumbnail = async () => {
-      try {
-        const blob = await productService.getProductThumbnail(product.id);
-        if (!isActive) {
-          return;
-        }
-        objectUrl = URL.createObjectURL(blob);
-        setThumbnailUrl(objectUrl);
-      } catch {
-        if (!isActive) {
-          return;
-        }
-        setThumbnailUrl(product.thumbnail || null);
-      }
-    };
-
-    loadThumbnail();
-
-    return () => {
-      isActive = false;
-      if (objectUrl) {
-        URL.revokeObjectURL(objectUrl);
-      }
-    };
-  }, [product.id, product.thumbnail]);
+  const thumbnailUrl = product.thumbnail || null;
 
   return (
     <article className="flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">

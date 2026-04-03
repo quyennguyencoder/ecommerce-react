@@ -1,4 +1,4 @@
-import { BrowserRouter, Route, Routes, Link } from 'react-router-dom';
+import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
 import MainLayout from './layouts/MainLayout';
 import AdminLayout from './layouts/AdminLayout';
 import AuthLayout from './layouts/AuthLayout';
@@ -11,11 +11,22 @@ import Product from './pages/Product';
 import ProductDetail from './pages/ProductDetail';
 import Notification from './pages/Notification';
 import Checkout from './pages/Checkout';
+import PaymentResult from './pages/PaymentResult';
 
 import AdminProducts from './pages/admin/Products';
 import ProductForm from './pages/admin/ProductForm';
 import ProductVariants from './pages/admin/ProductVariants';
 import AttributesConfig from './pages/admin/AttributesConfig';
+import AdminOrders from './pages/admin/Orders';
+import AdminUsers from './pages/admin/Users';
+import Login from './pages/auth/Login';
+import Register from './pages/auth/Register';
+
+/** Remount khi query đổi để reset phân trang, tránh gọi API với page cũ sau khi đổi bộ lọc */
+function ProductRoute() {
+  const { search } = useLocation();
+  return <Product key={search} />;
+}
 
 // Placeholder Component for unbuilt pages
 const Placeholder = ({ title }: { title: string }) => (
@@ -34,10 +45,11 @@ function App() {
         {/* Khách hàng - Main Layout */}
         <Route element={<MainLayout />}>
           <Route index element={<Home />} />
-          <Route path="product" element={<Product />} />
+          <Route path="product" element={<ProductRoute />} />
           <Route path="product/:id" element={<ProductDetail />} />
           <Route path="cart" element={<Cart />} />
           <Route path="checkout" element={<Checkout />} />
+          <Route path="payment-result" element={<PaymentResult />} />
           <Route path="profile" element={<Profile />} />
           <Route path="orders" element={<Orders />} />
           <Route path="notification" element={<Notification />} />
@@ -50,23 +62,16 @@ function App() {
            <Route path="products/create" element={<ProductForm />} />
            <Route path="products/:id/edit" element={<ProductForm />} />
            <Route path="products/:id/variants" element={<ProductVariants />} />
-           <Route path="orders" element={<Placeholder title="Quản lý Đơn hàng (Duyệt đơn, Đóng gói)" />} />
+           <Route path="orders" element={<AdminOrders />} />
            <Route path="attributes" element={<AttributesConfig />} />
-           <Route path="users" element={<Placeholder title="Quản lý Người dùng hệ thống" />} />
+           <Route path="users" element={<AdminUsers />} />
            <Route path="settings" element={<Placeholder title="Cài đặt hệ thống Cửa hàng" />} />
         </Route>
 
         {/* Xác thực - Auth Layout */}
         <Route path="/auth" element={<AuthLayout />}>
-           <Route path="login" element={
-              <div className="text-center">
-                 <h2 className="text-2xl font-bold mb-2 text-slate-900">Mừng bạn quay lại</h2>
-                 <p className="text-slate-500 mb-8">Vui lòng đăng nhập để tiếp tục.</p>
-                 <button className="w-full bg-indigo-600 text-white font-semibold py-3 rounded-xl hover:bg-indigo-700 transition shadow-sm mb-4">Mô phỏng Đăng nhập</button>
-                 <Link to="/auth/register" className="text-indigo-600 font-medium hover:underline text-sm">Chưa có tài khoản? Đăng ký ngay</Link>
-              </div>
-           } />
-           <Route path="register" element={<Placeholder title="Đăng Ký Tài Khoản Mới" />} />
+          <Route path="login" element={<Login />} />
+          <Route path="register" element={<Register />} />
         </Route>
 
         {/* 404 Not Found fallback */}

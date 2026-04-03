@@ -1,4 +1,4 @@
-import { Gender, OrderStatus, ShippingMethod, PaymentMethod, PaymentStatus } from './enums';
+import { Gender, OrderStatus, ShippingMethod, PaymentMethod, PaymentStatus, TransactionStatus } from './enums';
 
 export interface AttributeResponse {
   id: number;
@@ -163,6 +163,20 @@ export interface OrderResponse {
   paymentStatus: PaymentStatus;
   paymentUrl?: string;
   orderDetails: OrderDetailResponse[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PaymentUrlCreateResponse {
+  paymentUrl: string;
+}
+
+export interface TransactionResponse {
+  id: number;
+  transactionId: string;
+  paymentMethod: PaymentMethod;
+  transactionStatus: TransactionStatus;
+  orderId: number;
   createdAt: string;
   updatedAt: string;
 }

@@ -6,16 +6,18 @@ import Variations from '../components/product/detail/Variations';
 import ProductActions from '../components/product/detail/ProductActions';
 import ProductDetailsTabs from '../components/product/detail/ProductDetailsTabs';
 import RelatedProducts from '../components/product/detail/RelatedProducts';
-import type { 
-  ProductVariantResponse, 
-  ProductResponse, 
-  ProductImageResponse, 
-  FeedbackResponse 
+import type {
+  ProductVariantResponse,
+  ProductResponse,
+  ProductImageResponse,
+  FeedbackResponse,
+  AttributeValueResponse,
 } from '../types';
 import { productService } from '../services/productService';
 import { productImageService } from '../services/productImageService';
 import { productVariantService } from '../services/productVariantService';
 import { feedbackService } from '../services/feedbackService';
+import { attributeValueService } from '../services/attributeValueService';
 import { cartService } from '../services/cartService';
 import { getImageUrl } from '../utils/image';
 
@@ -28,6 +30,7 @@ const ProductDetail = () => {
   const [variants, setVariants] = useState<ProductVariantResponse[]>([]);
   const [reviews, setReviews] = useState<FeedbackResponse[]>([]);
   const [relatedProducts, setRelatedProducts] = useState<ProductResponse[]>([]);
+  const [attributeValues, setAttributeValues] = useState<AttributeValueResponse[]>([]);
   
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -55,11 +58,15 @@ const ProductDetail = () => {
         setProduct({ ...productData, thumbnail: getImageUrl(productData.thumbnail) });
 
         // Fetch related data in parallel
-        const [imagesRes, variantsRes, feedbackRes, relatedRes] = await Promise.all([
+        const [imagesRes, variantsRes, feedbackRes, relatedRes, attrRes] = await Promise.all([
           productImageService.getProductImagesByProductId(productId),
           productVariantService.getProductVariantsByProductId(productId),
           feedbackService.getAllFeedbacks({ productId, page: 0, size: 5 }),
-          productService.getAllProducts({ categoryId: productData.categoryId, page: 0, size: 4 })
+          productService.getAllProducts({ categoryId: productData.categoryId, page: 0, size: 4 }),
+          attributeValueService.getAllAttributeValues().catch((e) => {
+            console.warn('Không tải được danh sách thuộc tính:', e);
+            return { data: [] as AttributeValueResponse[] };
+          }),
         ]);
 
         // Map product images
@@ -69,6 +76,8 @@ const ProductDetail = () => {
         // Map variants images
         const variantsData = variantsRes.data || [];
         setVariants(variantsData.map(v => ({...v, image: getImageUrl(v.image)})));
+
+        setAttributeValues(attrRes.data || []);
 
         // Set reviews
         if (feedbackRes.data?.content) setReviews(feedbackRes.data.content);
@@ -102,7 +111,7 @@ const ProductDetail = () => {
       console.error('Lỗi khi thêm vào giỏ hàng:', err);
       if (err?.response?.status === 401 || err?.response?.status === 403) {
         alert('Vui lòng đăng nhập để thêm vào giỏ hàng.');
-        navigate('/login');
+        navigate(`/auth/login?redirect=${encodeURIComponent(`/product/${id ?? ''}`)}`);
       } else {
         alert('Có lỗi xảy ra. Vui lòng thử lại.');
       }
@@ -170,13 +179,21 @@ const ProductDetail = () => {
       <div className="flex flex-col lg:flex-row gap-10 xl:gap-16">
         {/* Left Col: Images */}
         <div className="w-full lg:w-[45%] xl:w-1/2">
-          <ProductGallery images={images} thumbnail={product.thumbnail} />
+          <ProductGallery
+            images={images}
+            thumbnail={product.thumbnail}
+            selectedVariantImage={selectedVariant?.image}
+          />
         </div>
 
         {/* Right Col: Info & Actions */}
         <div className="w-full lg:w-[55%] xl:w-1/2 flex flex-col pt-2 lg:pt-0">
-          <ProductInfo product={product} />
-          <Variations variants={variants} onSelectVariant={setSelectedVariant} />
+          <ProductInfo product={product} selectedVariant={selectedVariant} />
+          <Variations
+            variants={variants}
+            onSelectVariant={setSelectedVariant}
+            attributeValues={attributeValues}
+          />
           <ProductActions 
             selectedVariant={selectedVariant}
             onAddToCart={handleAddToCart}

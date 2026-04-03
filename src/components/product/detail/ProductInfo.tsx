@@ -1,11 +1,15 @@
 import { Star } from 'lucide-react';
-import type { ProductResponse } from '../../../types/responses';
+import type { ProductResponse, ProductVariantResponse } from '../../../types/responses';
 
 interface ProductInfoProps {
   product: ProductResponse;
+  /** Khi đã chọn biến thể, hiển thị giá / tồn theo variant */
+  selectedVariant?: ProductVariantResponse | null;
 }
 
-const ProductInfo = ({ product }: ProductInfoProps) => {
+const ProductInfo = ({ product, selectedVariant }: ProductInfoProps) => {
+  const displayPrice = selectedVariant ? selectedVariant.price : product.basePrice;
+  const displayStock = selectedVariant ? selectedVariant.stock : product.totalStock;
   return (
     <div className="flex flex-col gap-4 border-b border-slate-200 pb-6">
       {/* Category & Rating */}
@@ -28,7 +32,7 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
       {/* Price Area */}
       <div className="flex items-end gap-3 mt-2">
         <span className="text-3xl font-bold text-indigo-600">
-          {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(product.basePrice)}
+          {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(displayPrice)}
         </span>
         {product.isHot && (
           <span className="text-xs font-bold text-white bg-rose-500 px-2 py-1 rounded uppercase tracking-wide mb-1 shadow-sm">
@@ -37,12 +41,12 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
         )}
       </div>
 
-      {/* Stock status */}
+      {/* Stock status — theo biến thể đang chọn (nếu có) */}
       <div className="text-sm mt-1">
-        {product.totalStock > 0 ? (
+        {displayStock > 0 ? (
           <span className="text-emerald-600 font-medium flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            Còn hàng ({product.totalStock} sản phẩm có sẵn)
+            Còn hàng ({displayStock} sản phẩm)
           </span>
         ) : (
            <span className="text-rose-500 font-medium flex items-center gap-1.5">
