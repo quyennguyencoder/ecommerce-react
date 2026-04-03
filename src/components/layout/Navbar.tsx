@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Bell, ChevronDown, Loader2, Search, ShoppingCart } from 'lucide-react';
 
+import { authService } from '../../services/authService';
 import { categoryService } from '../../services/categoryService';
+import { clearAuthSession, getAccessToken } from '../../utils/authStorage';
 import type { CategoryResponse } from '../../types';
 
 type CategoryOption = Pick<CategoryResponse, 'id' | 'name'>;
@@ -131,6 +133,21 @@ export default function Navbar() {
       navigateToProductList();
     } finally {
       setIsSearching(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    setIsAvatarOpen(false);
+    try {
+      const token = getAccessToken();
+      if (token) {
+        await authService.logout(token);
+      }
+    } catch (error) {
+      console.error('Failed to logout', error);
+    } finally {
+      clearAuthSession();
+      navigate('/auth/login');
     }
   };
 
@@ -286,7 +303,7 @@ export default function Navbar() {
                   <button
                     type="button"
                     className="w-full rounded-lg px-2.5 py-2 text-left text-sm text-slate-800 transition hover:bg-slate-100"
-                    onClick={() => setIsAvatarOpen(false)}
+                    onClick={handleLogout}
                   >
                     Logout
                   </button>

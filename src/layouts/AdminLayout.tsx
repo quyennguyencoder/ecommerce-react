@@ -1,8 +1,12 @@
-import { Outlet, Link, useLocation } from 'react-router-dom';
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, ShoppingBag, ShoppingCart, Users, Settings, LogOut, Tags } from 'lucide-react';
+
+import { authService } from '../services/authService';
+import { clearAuthSession, getAccessToken } from '../utils/authStorage';
 
 const AdminLayout = () => {
   const location = useLocation();
+  const navigate = useNavigate();
 
   const menuItems = [
     { label: 'Tổng quan', path: '/admin', icon: <LayoutDashboard size={20} /> },
@@ -12,6 +16,20 @@ const AdminLayout = () => {
     { label: 'Khách hàng', path: '/admin/users', icon: <Users size={20} /> },
     { label: 'Cài đặt', path: '/admin/settings', icon: <Settings size={20} /> },
   ];
+
+  const handleLogout = async () => {
+    try {
+      const token = getAccessToken();
+      if (token) {
+        await authService.logout(token);
+      }
+    } catch (error) {
+      console.error('Failed to logout', error);
+    } finally {
+      clearAuthSession();
+      navigate('/auth/login');
+    }
+  };
 
   return (
     <div className="flex h-screen bg-slate-100 overflow-hidden font-sans">
@@ -43,9 +61,13 @@ const AdminLayout = () => {
         </nav>
 
         <div className="p-4 border-t border-slate-800">
-          <Link to="/" className="flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-slate-400 hover:bg-rose-500 hover:text-white transition-all">
-            <LogOut size={20} /> Thoát Admin
-          </Link>
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="flex w-full items-center gap-3 px-4 py-3 rounded-xl font-medium text-slate-400 hover:bg-rose-500 hover:text-white transition-all"
+          >
+            <LogOut size={20} /> Đăng xuất
+          </button>
         </div>
       </aside>
 

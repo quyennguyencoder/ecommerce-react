@@ -2,6 +2,7 @@ import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
 import MainLayout from './layouts/MainLayout';
 import AdminLayout from './layouts/AdminLayout';
 import AuthLayout from './layouts/AuthLayout';
+import ProtectedRoute from './routes/ProtectedRoute';
 
 import Cart from './pages/Cart';
 import Home from './pages/Home';
@@ -21,6 +22,7 @@ import AdminOrders from './pages/admin/Orders';
 import AdminUsers from './pages/admin/Users';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
+import { Role } from './types/enums';
 
 /** Remount khi query đổi để reset phân trang, tránh gọi API với page cũ sau khi đổi bộ lọc */
 function ProductRoute() {
@@ -47,25 +49,29 @@ function App() {
           <Route index element={<Home />} />
           <Route path="product" element={<ProductRoute />} />
           <Route path="product/:id" element={<ProductDetail />} />
-          <Route path="cart" element={<Cart />} />
-          <Route path="checkout" element={<Checkout />} />
           <Route path="payment-result" element={<PaymentResult />} />
-          <Route path="profile" element={<Profile />} />
-          <Route path="orders" element={<Orders />} />
-          <Route path="notification" element={<Notification />} />
+          <Route element={<ProtectedRoute allowedRoles={[Role.USER, Role.STAFF, Role.ADMIN]} />}>
+            <Route path="cart" element={<Cart />} />
+            <Route path="checkout" element={<Checkout />} />
+            <Route path="profile" element={<Profile />} />
+            <Route path="orders" element={<Orders />} />
+            <Route path="notification" element={<Notification />} />
+          </Route>
         </Route>
 
         {/* Quản trị viên - Admin Layout */}
-        <Route path="/admin" element={<AdminLayout />}>
-           <Route index element={<Placeholder title="Trang Tổng Quan Tổng Hợp (Dashboard)" />} />
-           <Route path="products" element={<AdminProducts />} />
-           <Route path="products/create" element={<ProductForm />} />
-           <Route path="products/:id/edit" element={<ProductForm />} />
-           <Route path="products/:id/variants" element={<ProductVariants />} />
-           <Route path="orders" element={<AdminOrders />} />
-           <Route path="attributes" element={<AttributesConfig />} />
-           <Route path="users" element={<AdminUsers />} />
-           <Route path="settings" element={<Placeholder title="Cài đặt hệ thống Cửa hàng" />} />
+        <Route element={<ProtectedRoute allowedRoles={[Role.ADMIN, Role.STAFF]} />}>
+          <Route path="/admin" element={<AdminLayout />}>
+             <Route index element={<Placeholder title="Trang Tổng Quan Tổng Hợp (Dashboard)" />} />
+             <Route path="products" element={<AdminProducts />} />
+             <Route path="products/create" element={<ProductForm />} />
+             <Route path="products/:id/edit" element={<ProductForm />} />
+             <Route path="products/:id/variants" element={<ProductVariants />} />
+             <Route path="orders" element={<AdminOrders />} />
+             <Route path="attributes" element={<AttributesConfig />} />
+             <Route path="users" element={<AdminUsers />} />
+             <Route path="settings" element={<Placeholder title="Cài đặt hệ thống Cửa hàng" />} />
+          </Route>
         </Route>
 
         {/* Xác thực - Auth Layout */}

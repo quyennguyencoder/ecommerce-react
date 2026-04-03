@@ -1,4 +1,4 @@
-import type { LoginResponse } from '../types';
+import type { LoginResponse, UserResponse } from '../types';
 
 const ACCESS_KEY = 'ec_access_token';
 const REFRESH_KEY = 'ec_refresh_token';
@@ -22,4 +22,14 @@ export function getAccessToken(): string | null {
 
 export function getRefreshToken(): string | null {
   return localStorage.getItem(REFRESH_KEY);
+}
+
+export function getStoredUser(): UserResponse | null {
+  const raw = localStorage.getItem(USER_KEY);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as UserResponse;
+  } catch {
+    return null;
+  }
 }
