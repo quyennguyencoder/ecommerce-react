@@ -40,3 +40,8 @@ export enum TransactionStatus {
   FAILED = 'FAILED',
 }
 
+export enum SocialLoginType {
+  GOOGLE = 'GOOGLE',
+  FACEBOOK = 'FACEBOOK',
+}
+

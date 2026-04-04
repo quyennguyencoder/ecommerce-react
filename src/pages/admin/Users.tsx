@@ -17,6 +17,7 @@ import { roleService } from '../../services/roleService';
 import type { UserResponse, UserUpdateRequest, RoleResponse } from '../../types';
 import { Role } from '../../types/enums';
 import { getImageUrl } from '../../utils/image';
+import { getStoredUser } from '../../utils/authStorage';
 
 const formatDate = (dateString: string) => {
   const date = new Date(dateString);
@@ -53,6 +54,8 @@ const roleBadgeClass = (roleName: string) => {
 type RoleFilter = 'ALL' | Role;
 
 const AdminUsers = () => {
+  const currentUser = getStoredUser();
+  const isStaff = currentUser?.role?.name?.toUpperCase() === Role.STAFF;
   const [users, setUsers] = useState<UserResponse[]>([]);
   const [roles, setRoles] = useState<RoleResponse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -159,7 +162,7 @@ const AdminUsers = () => {
   };
 
   const handleRoleChange = async (user: UserResponse, roleId: number) => {
-    if (roleId === user.role.id) return;
+    if (!user.role?.id || roleId === user.role.id) return;
     try {
       setBusyRoleId(user.id);
       await userService.updateUserRole(user.id, roleId);
@@ -210,6 +213,17 @@ const AdminUsers = () => {
       setBusyDeleteId(null);
     }
   };
+
+  if (isStaff) {
+    return (
+      <div className="bg-white p-10 rounded-2xl shadow-sm border border-slate-100 text-center">
+        <h1 className="text-2xl font-bold text-slate-800">Không có quyền truy cập</h1>
+        <p className="text-slate-500 mt-2">
+          Tài khoản STAFF không có chức năng quản lý người dùng.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -331,7 +345,7 @@ const AdminUsers = () => {
                       </p>
                     </td>
                     <td className="py-4 px-4">
-                      {roles.length > 0 ? (
+                      {roles.length > 0 && user.role?.id ? (
                         <div className="flex items-center gap-2">
                           <select
                             disabled={busyRoleId === user.id}
@@ -353,10 +367,10 @@ const AdminUsers = () => {
                         </div>
                       ) : (
                         <span
-                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium ${roleBadgeClass(user.role.name)}`}
+                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium ${roleBadgeClass(user.role?.name ?? '')}`}
                         >
                           <Shield size={12} />
-                          {user.role.name}
+                          {user.role?.name ?? 'Không rõ'}
                         </span>
                       )}
                     </td>

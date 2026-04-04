@@ -72,6 +72,10 @@ export interface RefreshTokenResponse {
   expiresIn: number;
 }
 
+export interface AuthUrlResponse {
+  authUrl: string;
+}
+
 export interface ProductImageResponse {
   id: number;
   imageUrl: string;

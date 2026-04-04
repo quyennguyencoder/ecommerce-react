@@ -50,8 +50,8 @@ const AttributesConfig = () => {
           handleSelectAttribute(res.data[0].id);
         }
       }
-    } catch (err) {
-      console.error('Fetch Data Error', err);
+    } catch {
+      console.error('Fetch Data Error');
     } finally {
       setIsLoading(false);
     }
@@ -65,9 +65,9 @@ const AttributesConfig = () => {
       await categoryService.createCategory({ name: newCatName.trim() });
       setNewCatName('');
       fetchInitialData();
-    } catch (err) {
+     } catch {
        alert('Không thể tạo Category');
-    }
+     }
   };
 
   const handleUpdateCategory = async (id: number) => {
@@ -76,7 +76,7 @@ const AttributesConfig = () => {
       await categoryService.updateCategory(id, { name: editingCatName.trim() });
       setEditingCatId(null);
       fetchInitialData();
-    } catch (err) {
+     } catch {
        alert('Cập nhật Category thất bại');
     }
   };
@@ -86,7 +86,7 @@ const AttributesConfig = () => {
       try {
         await categoryService.deleteCategory(id);
         fetchInitialData();
-      } catch (err) {
+      } catch {
         alert('Không thể xoá danh mục vì đang có Sản phẩm thuộc danh mục này.');
       }
     }
@@ -98,8 +98,8 @@ const AttributesConfig = () => {
     try {
       const res = await attributeValueService.getAttributeValuesByAttributeId(attrId);
       setAttrValues(res.data || []);
-    } catch (err) {
-      console.error(err);
+    } catch {
+      console.error('Không tải được giá trị thuộc tính');
     }
   };
 
@@ -111,7 +111,9 @@ const AttributesConfig = () => {
       setNewAttrName('');
       await fetchInitialData();
       if (res.data?.id) handleSelectAttribute(res.data.id);
-    } catch(err) { alert('Tạo thuộc tính thất bại'); }
+    } catch {
+      alert('Tạo thuộc tính thất bại');
+    }
   };
 
   const handleUpdateAttribute = async (id: number) => {
@@ -120,7 +122,7 @@ const AttributesConfig = () => {
       await attributeService.updateAttribute(id, { name: editingAttrName.trim() });
       setEditingAttrId(null);
       fetchInitialData();
-    } catch (err) { alert('Cập nhật thuộc tính thất bại'); }
+    } catch { alert('Cập nhật thuộc tính thất bại'); }
   };
 
   const handleDeleteAttribute = async (id: number) => {
@@ -132,7 +134,7 @@ const AttributesConfig = () => {
            setAttrValues([]);
         }
         fetchInitialData();
-      } catch (err) { alert('Không thể xoá thuộc tính đang được dùng trong các Sản phẩm.'); }
+      } catch { alert('Không thể xoá thuộc tính đang được dùng trong các Sản phẩm.'); }
     }
   };
 
@@ -144,7 +146,7 @@ const AttributesConfig = () => {
       await attributeValueService.createAttributeValue({ value: newAttrValue.trim(), attributeId: selectedAttrId });
       setNewAttrValue('');
       handleSelectAttribute(selectedAttrId); // Reload Detail List
-    } catch(err) { alert('Tạo Giá Trị thất bại'); }
+    } catch { alert('Tạo Giá Trị thất bại'); }
   };
 
   const handleUpdateAttrValue = async (id: number) => {
@@ -153,7 +155,7 @@ const AttributesConfig = () => {
       await attributeValueService.updateAttributeValue(id, { value: editingValueText.trim(), attributeId: selectedAttrId });
       setEditingValueId(null);
       handleSelectAttribute(selectedAttrId);
-    } catch (err) { alert('Cập nhật Giá trị thất bại'); }
+    } catch { alert('Cập nhật Giá trị thất bại'); }
   };
 
   const handleDeleteAttrValue = async (id: number) => {
@@ -161,7 +163,7 @@ const AttributesConfig = () => {
       try {
         await attributeValueService.deleteAttributeValue(id);
         if (selectedAttrId) handleSelectAttribute(selectedAttrId);
-      } catch (err) { alert('Dữ liệu đang được kết nối với Variant không thể xoá!'); }
+      } catch { alert('Dữ liệu đang được kết nối với Variant không thể xoá!'); }
     }
   };
 

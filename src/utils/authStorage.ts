@@ -33,3 +33,7 @@ export function getStoredUser(): UserResponse | null {
     return null;
   }
 }
+
+export function setStoredUser(user: UserResponse): void {
+  localStorage.setItem(USER_KEY, JSON.stringify(user));
+}

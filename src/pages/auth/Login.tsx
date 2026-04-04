@@ -8,6 +8,7 @@ import { LogIn, AlertCircle } from 'lucide-react';
 import { authService } from '../../services/authService';
 import { setAuthSession } from '../../utils/authStorage';
 import { getApiErrorMessage } from '../../utils/apiError';
+import { SocialLoginType } from '../../types';
 
 const loginSchema = z.object({
   emailOrPhone: z.string().min(1, 'Nhập email hoặc số điện thoại'),
@@ -24,6 +25,7 @@ const Login = () => {
 
   const [serverError, setServerError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [socialLoading, setSocialLoading] = useState<SocialLoginType | null>(null);
 
   const {
     register,
@@ -62,6 +64,24 @@ const Login = () => {
     }
   };
 
+  const handleSocialLogin = async (provider: SocialLoginType) => {
+    setServerError(null);
+    setSocialLoading(provider);
+    try {
+      const res = await authService.generateSocialAuthUrl(provider);
+      const authUrl = res.data?.authUrl;
+      if (!authUrl) {
+        setServerError(res.message || 'Khong the tao duong dan dang nhap.');
+        return;
+      }
+      window.location.href = authUrl;
+    } catch (err) {
+      setServerError(getApiErrorMessage(err, 'Khong the tao duong dan dang nhap.'));
+    } finally {
+      setSocialLoading(null);
+    }
+  };
+
   return (
     <div className="text-center sm:text-left">
       <h2 className="text-2xl font-bold text-slate-900">Đăng nhập</h2>
@@ -81,6 +101,29 @@ const Login = () => {
           <span>{serverError}</span>
         </div>
       )}
+
+      <div className="mt-6 grid gap-3 sm:grid-cols-2">
+        <button
+          type="button"
+          onClick={() => handleSocialLogin(SocialLoginType.GOOGLE)}
+          disabled={!!socialLoading}
+          className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-70"
+        >
+          {socialLoading === SocialLoginType.GOOGLE
+            ? 'Dang chuyen huong...'
+            : 'Dang nhap Google'}
+        </button>
+        <button
+          type="button"
+          onClick={() => handleSocialLogin(SocialLoginType.FACEBOOK)}
+          disabled={!!socialLoading}
+          className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-70"
+        >
+          {socialLoading === SocialLoginType.FACEBOOK
+            ? 'Dang chuyen huong...'
+            : 'Dang nhap Facebook'}
+        </button>
+      </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-4 text-left">
         <div>

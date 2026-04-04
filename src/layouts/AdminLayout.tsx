@@ -2,18 +2,20 @@ import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, ShoppingBag, ShoppingCart, Users, Settings, LogOut, Tags } from 'lucide-react';
 
 import { authService } from '../services/authService';
-import { clearAuthSession, getAccessToken } from '../utils/authStorage';
+import { clearAuthSession, getAccessToken, getStoredUser } from '../utils/authStorage';
+import { Role } from '../types/enums';
 
 const AdminLayout = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
+  const isStaff = getStoredUser()?.role?.name?.toUpperCase() === Role.STAFF;
   const menuItems = [
-    { label: 'Tổng quan', path: '/admin', icon: <LayoutDashboard size={20} /> },
+    ...(isStaff ? [] : [{ label: 'Tổng quan', path: '/admin', icon: <LayoutDashboard size={20} /> }]),
     { label: 'Sản phẩm', path: '/admin/products', icon: <ShoppingBag size={20} /> },
     { label: 'Đơn hàng', path: '/admin/orders', icon: <ShoppingCart size={20} /> },
     { label: 'Thuộc tính', path: '/admin/attributes', icon: <Tags size={20} /> },
-    { label: 'Khách hàng', path: '/admin/users', icon: <Users size={20} /> },
+    ...(isStaff ? [] : [{ label: 'Khách hàng', path: '/admin/users', icon: <Users size={20} /> }]),
     { label: 'Cài đặt', path: '/admin/settings', icon: <Settings size={20} /> },
   ];
 

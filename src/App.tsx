@@ -1,4 +1,4 @@
-import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import MainLayout from './layouts/MainLayout';
 import AdminLayout from './layouts/AdminLayout';
 import AuthLayout from './layouts/AuthLayout';
@@ -22,7 +22,9 @@ import AdminOrders from './pages/admin/Orders';
 import AdminUsers from './pages/admin/Users';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
+import SocialCallback from './pages/auth/SocialCallback';
 import { Role } from './types/enums';
+import { getStoredUser } from './utils/authStorage';
 
 /** Remount khi query đổi để reset phân trang, tránh gọi API với page cũ sau khi đổi bộ lọc */
 function ProductRoute() {
@@ -38,6 +40,15 @@ const Placeholder = ({ title }: { title: string }) => (
     <p className="text-slate-500 max-w-sm">Tính năng này đang trong quá trình phát triển và sẽ sớm được ra mắt.</p>
   </div>
 );
+
+const DashboardRoute = () => {
+  const user = getStoredUser();
+  const roleName = user?.role?.name?.toUpperCase() as Role | undefined;
+  if (roleName === Role.STAFF) {
+    return <Navigate to="/admin/products" replace />;
+  }
+  return <Placeholder title="Trang Tổng Quan Tổng Hợp (Dashboard)" />;
+};
 
 function App() {
   return (
@@ -62,7 +73,7 @@ function App() {
         {/* Quản trị viên - Admin Layout */}
         <Route element={<ProtectedRoute allowedRoles={[Role.ADMIN, Role.STAFF]} />}>
           <Route path="/admin" element={<AdminLayout />}>
-             <Route index element={<Placeholder title="Trang Tổng Quan Tổng Hợp (Dashboard)" />} />
+             <Route index element={<DashboardRoute />} />
              <Route path="products" element={<AdminProducts />} />
              <Route path="products/create" element={<ProductForm />} />
              <Route path="products/:id/edit" element={<ProductForm />} />
@@ -78,6 +89,14 @@ function App() {
         <Route path="/auth" element={<AuthLayout />}>
           <Route path="login" element={<Login />} />
           <Route path="register" element={<Register />} />
+          <Route
+            path="google/callback"
+            element={<SocialCallback provider="google" />}
+          />
+          <Route
+            path="facebook/callback"
+            element={<SocialCallback provider="facebook" />}
+          />
         </Route>
 
         {/* 404 Not Found fallback */}

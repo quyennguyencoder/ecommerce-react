@@ -4,8 +4,12 @@ import { Bell, ChevronDown, Loader2, Search, ShoppingCart } from 'lucide-react';
 
 import { authService } from '../../services/authService';
 import { categoryService } from '../../services/categoryService';
-import { clearAuthSession, getAccessToken } from '../../utils/authStorage';
-import type { CategoryResponse } from '../../types';
+import {
+  clearAuthSession,
+  getAccessToken,
+  getStoredUser,
+} from '../../utils/authStorage';
+import type { CategoryResponse, UserResponse } from '../../types';
 
 type CategoryOption = Pick<CategoryResponse, 'id' | 'name'>;
 
@@ -41,6 +45,7 @@ export default function Navbar() {
   const location = useLocation();
 
   const [categories, setCategories] = useState<CategoryResponse[]>([]);
+  const [currentUser, setCurrentUser] = useState<UserResponse | null>(null);
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [isAvatarOpen, setIsAvatarOpen] = useState(false);
   const [isLoadingCategories, setIsLoadingCategories] = useState(false);
@@ -52,6 +57,14 @@ export default function Navbar() {
 
   const categoryRef = useRef<HTMLDivElement | null>(null);
   const avatarRef = useRef<HTMLDivElement | null>(null);
+
+  const getInitials = (name?: string) => {
+    const trimmed = name?.trim();
+    if (!trimmed) return 'U';
+    const parts = trimmed.split(/\s+/);
+    if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
+    return `${parts[0].charAt(0)}${parts[parts.length - 1].charAt(0)}`.toUpperCase();
+  };
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -67,6 +80,20 @@ export default function Navbar() {
     };
 
     fetchCategories();
+  }, []);
+
+  useEffect(() => {
+    setCurrentUser(getStoredUser());
+  }, [location.pathname, location.search]);
+
+  useEffect(() => {
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key === 'ec_user') {
+        setCurrentUser(getStoredUser());
+      }
+    };
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
   }, []);
 
   /** Đồng bộ ô tìm kiếm + category với URL khi đang ở /product */
@@ -147,6 +174,7 @@ export default function Navbar() {
       console.error('Failed to logout', error);
     } finally {
       clearAuthSession();
+      setCurrentUser(null);
       navigate('/auth/login');
     }
   };
@@ -280,9 +308,17 @@ export default function Navbar() {
                 onClick={() => setIsAvatarOpen((prev) => !prev)}
                 aria-label="Mở menu tài khoản"
               >
-                <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-slate-800 to-slate-900 text-sm font-semibold text-white shadow-md">
-                  U
-                </span>
+                {currentUser?.avatar ? (
+                  <img
+                    src={currentUser.avatar}
+                    alt={currentUser.name}
+                    className="h-10 w-10 rounded-full object-cover shadow-md ring-2 ring-white"
+                  />
+                ) : (
+                  <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-slate-800 to-slate-900 text-sm font-semibold text-white shadow-md">
+                    {getInitials(currentUser?.name)}
+                  </span>
+                )}
               </button>
               {isAvatarOpen && (
                 <div className="absolute right-0 top-[calc(100%+10px)] z-20 min-w-[11rem] rounded-xl border border-slate-200/90 bg-white p-1.5 shadow-lg shadow-slate-900/10 ring-1 ring-slate-900/5">

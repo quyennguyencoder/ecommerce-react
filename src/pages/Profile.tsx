@@ -6,6 +6,7 @@ import ProfileHeader from '../components/profile/ProfileHeader';
 import ProfileInfo from '../components/profile/ProfileInfo';
 import ProfileSkeleton from '../components/profile/ProfileSkeleton';
 import { userService } from '../services/userService';
+import { setStoredUser } from '../utils/authStorage';
 import type {
   UserChangePasswordRequest,
   UserResponse,
@@ -130,6 +131,7 @@ const Profile = () => {
       setProfile(nextProfile);
       if (nextProfile) {
         setDraftProfile(buildDraft(nextProfile));
+        setStoredUser(nextProfile);
       }
       setAvatarSuccess('Cap nhat avatar thanh cong.');
       showToast({ type: 'success', message: 'Cap nhat avatar thanh cong.' });
