@@ -11,7 +11,7 @@ import { DiscountType } from '../../types/enums';
 
 const couponSchema = z.object({
   code: z.string().min(1, 'Vui lòng nhập mã coupon').max(50, 'Mã coupon tối đa 50 ký tự'),
-  discountType: z.nativeEnum(DiscountType, { required_error: 'Vui lòng chọn loại giảm giá' }),
+  discountType: z.nativeEnum(DiscountType, { message: 'Vui lòng chọn loại giảm giá' }),
   discountValue: z.coerce.number().min(0, 'Giá trị giảm giá phải lớn hơn hoặc bằng 0'),
   minOrderValue: z.coerce.number().min(0, 'Giá trị đơn hàng tối thiểu phải lớn hơn hoặc bằng 0').optional(),
   maxDiscount: z.coerce.number().min(0, 'Giảm giá tối đa phải lớn hơn hoặc bằng 0').optional(),
