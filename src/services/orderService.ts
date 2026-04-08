@@ -2,6 +2,7 @@ import type {
   ApiResponse,
   OrderCreateRequest,
   OrderResponse,
+  OrderCalculationResponse,
   PaginationResponse,
 } from '../types';
 import type { OrderStatus } from '../types/enums';
@@ -65,6 +66,14 @@ export const orderService = {
 
   async deleteOrder(id: number) {
     const response = await api.delete<ApiResponse<void>>(`${ORDERS_PATH}/${id}`);
+    return response.data;
+  },
+
+  async calculateTotalPrice(payload: OrderCreateRequest) {
+    const response = await api.post<ApiResponse<OrderCalculationResponse>>(
+      `${ORDERS_PATH}/calculate-total`,
+      payload
+    );
     return response.data;
   },
 };

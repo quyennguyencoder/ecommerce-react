@@ -20,6 +20,14 @@ import { feedbackService } from '../services/feedbackService';
 import { attributeValueService } from '../services/attributeValueService';
 import { cartService } from '../services/cartService';
 import { getImageUrl } from '../utils/image';
+import { getAccessToken } from '../utils/authStorage';
+
+const getResponseStatus = (error: unknown): number | undefined => {
+  if (typeof error !== 'object' || !error) return undefined;
+  if (!('response' in error)) return undefined;
+  const response = (error as { response?: { status?: number } }).response;
+  return response?.status;
+};
 
 const ProductDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -37,6 +45,7 @@ const ProductDetail = () => {
 
   const [selectedVariant, setSelectedVariant] = useState<ProductVariantResponse | null>(null);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
 
   useEffect(() => {
     const fetchProductData = async () => {
@@ -101,15 +110,59 @@ const ProductDetail = () => {
     window.scrollTo(0, 0);
   }, [id]);
 
+  const refreshReviews = async (productId: number) => {
+    try {
+      const feedbackRes = await feedbackService.getAllFeedbacks({ productId, page: 0, size: 5 });
+      setReviews(feedbackRes.data?.content || []);
+    } catch (err) {
+      console.error('Lỗi tải đánh giá:', err);
+    }
+  };
+
+  const handleCreateReview = async (payload: { star: number; content?: string }) => {
+    if (!id) return;
+    const token = getAccessToken();
+    if (!token) {
+      navigate(`/auth/login?redirect=${encodeURIComponent(`/product/${id}`)}`);
+      return;
+    }
+
+    const productId = parseInt(id, 10);
+    if (Number.isNaN(productId)) return;
+
+    try {
+      setIsSubmittingReview(true);
+      await feedbackService.createFeedback({
+        star: payload.star,
+        content: payload.content,
+        productId,
+      });
+      await refreshReviews(productId);
+      alert('Cảm ơn bạn đã đánh giá sản phẩm!');
+    } catch (err: unknown) {
+      console.error('Lỗi gửi đánh giá:', err);
+      const status = getResponseStatus(err);
+      if (status === 401 || status === 403) {
+        alert('Vui lòng đăng nhập để đánh giá sản phẩm.');
+        navigate(`/auth/login?redirect=${encodeURIComponent(`/product/${id}`)}`);
+      } else {
+        alert('Không thể gửi đánh giá lúc này. Vui lòng thử lại.');
+      }
+    } finally {
+      setIsSubmittingReview(false);
+    }
+  };
+
   const handleAddToCart = async (variantId: number, quantity: number) => {
     if (isAddingToCart) return;
     setIsAddingToCart(true);
     try {
       await cartService.addToCart({ variantId, quantity });
       alert(`Đã thêm ${quantity} sản phẩm vào giỏ hàng thành công!`);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Lỗi khi thêm vào giỏ hàng:', err);
-      if (err?.response?.status === 401 || err?.response?.status === 403) {
+      const status = getResponseStatus(err);
+      if (status === 401 || status === 403) {
         alert('Vui lòng đăng nhập để thêm vào giỏ hàng.');
         navigate(`/auth/login?redirect=${encodeURIComponent(`/product/${id ?? ''}`)}`);
       } else {
@@ -120,24 +173,48 @@ const ProductDetail = () => {
     }
   };
 
-  const handleBuyNow = (variantId: number, quantity: number) => {
+  const handleBuyNow = async (variantId: number, quantity: number) => {
     const buyNowVariant = variants.find(v => v.id === variantId);
     if (!product || !buyNowVariant) {
       alert('Dữ liệu sản phẩm chưa sẵn sàng, vui lòng tải lại trang.');
       return;
     }
 
-    // Chuyển trực tiếp đến trang checkout kèm theo data của sản phẩm hiện tại
-    navigate('/checkout', {
-      state: {
-        isBuyNow: true,
-        buyNowItem: {
-          product,
-          variant: buyNowVariant,
-          quantity
-        }
+    try {
+      await cartService.clearCart();
+      const res = await cartService.addToCart({ variantId: buyNowVariant.id, quantity });
+      const addedItem = res.data?.cartItems?.find(
+        item => item.variantId === buyNowVariant.id
+      );
+      if (!addedItem) {
+        throw new Error('Không lấy được thông tin sản phẩm trong giỏ hàng.');
       }
-    });
+
+      navigate('/checkout', {
+        state: {
+          isBuyNow: true,
+          buyNowItem: {
+            product,
+            variant: buyNowVariant,
+            quantity,
+          },
+          buyNowCartItemId: addedItem.id,
+        },
+      });
+      return;
+    } catch (err: unknown) {
+      console.error('Lỗi khi xử lý mua ngay:', err);
+      const status = getResponseStatus(err);
+      if (status === 401 || status === 403) {
+        alert('Vui lòng đăng nhập để mua ngay.');
+        navigate(`/auth/login?redirect=${encodeURIComponent(`/product/${id ?? ''}`)}`);
+        return;
+      }
+      alert('Có lỗi xảy ra. Vui lòng thử lại.');
+      return;
+    }
+
+    navigate('/checkout');
   };
 
   if (loading) {
@@ -204,7 +281,16 @@ const ProductDetail = () => {
       </div>
 
       {/* Tabs Layout */}
-      <ProductDetailsTabs description={product.description} reviews={reviews} />
+      <ProductDetailsTabs
+        description={product.description}
+        reviews={reviews}
+        canReview={!!getAccessToken()}
+        isSubmittingReview={isSubmittingReview}
+        onSubmitReview={handleCreateReview}
+        onRequestLogin={() =>
+          navigate(`/auth/login?redirect=${encodeURIComponent(`/product/${id ?? ''}`)}`)
+        }
+      />
 
       {/* Related Layout */}
       <RelatedProducts products={relatedProducts} />

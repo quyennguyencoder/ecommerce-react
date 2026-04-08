@@ -1,20 +1,33 @@
 import { useFormContext } from 'react-hook-form';
-import type { CartResponse } from '../../types/responses';
+import type { CartResponse, OrderCalculationResponse } from '../../types/responses';
 import { ShippingMethod } from '../../types/enums';
 import { getImageUrl } from '../../utils/image';
 
 interface OrderSummaryProps {
   cart: CartResponse;
   isLoading: boolean;
+  calculation?: OrderCalculationResponse | null;
+  isCalculating?: boolean;
+  onApplyCoupon?: () => void;
+  appliedCouponCode?: string;
 }
 
-const OrderSummary = ({ cart, isLoading }: OrderSummaryProps) => {
+const OrderSummary = ({
+  cart,
+  isLoading,
+  calculation,
+  isCalculating = false,
+  onApplyCoupon,
+  appliedCouponCode = '',
+}: OrderSummaryProps) => {
   const { watch, register } = useFormContext();
   const selectedShipping = watch('shippingMethod');
-  
-  const shippingFee = selectedShipping === ShippingMethod.EXPRESS ? 50000 : 30000;
-  const subtotal = cart.totalPrice;
-  const total = subtotal + shippingFee;
+
+  const shippingFee = calculation?.shippingFee ?? (selectedShipping === ShippingMethod.EXPRESS ? 50000 : 30000);
+  const subtotal = calculation?.subTotal ?? cart.totalPrice;
+  const discountAmount = calculation?.discountAmount ?? 0;
+  const total = calculation?.finalTotal ?? subtotal + shippingFee;
+  const isCouponValid = calculation?.isCouponValid;
 
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val);
@@ -53,13 +66,21 @@ const OrderSummary = ({ cart, isLoading }: OrderSummaryProps) => {
           {...register('couponCode')}
           className="flex-1 px-4 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 outline-none transition-all placeholder:text-slate-400"
         />
-        <button 
-          type="button" 
-          className="px-5 py-2.5 bg-slate-800 hover:bg-slate-900 transition-colors text-white font-semibold text-sm rounded-xl whitespace-nowrap shadow-sm"
+        <button
+          type="button"
+          onClick={onApplyCoupon}
+          disabled={isLoading || isCalculating}
+          className="px-5 py-2.5 bg-slate-800 hover:bg-slate-900 transition-colors text-white font-semibold text-sm rounded-xl whitespace-nowrap shadow-sm disabled:opacity-60"
         >
-          Áp dụng
+          {isCalculating ? 'Đang áp dụng...' : 'Áp dụng'}
         </button>
       </div>
+
+      {appliedCouponCode && isCouponValid === false && (
+        <p className="mb-6 text-sm text-rose-500 font-medium">
+          Mã giảm giá không hợp lệ hoặc đã hết hạn.
+        </p>
+      )}
 
       {/* Bill Details */}
       <div className="space-y-3 text-sm mb-6">
@@ -73,7 +94,7 @@ const OrderSummary = ({ cart, isLoading }: OrderSummaryProps) => {
         </div>
         <div className="flex justify-between text-slate-600">
           <span>Giảm giá</span>
-          <span className="font-semibold text-rose-500">- đ0</span>
+          <span className="font-semibold text-rose-500">-{formatCurrency(discountAmount)}</span>
         </div>
       </div>
 

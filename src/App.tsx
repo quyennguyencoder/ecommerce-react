@@ -20,6 +20,8 @@ import ProductVariants from './pages/admin/ProductVariants';
 import AttributesConfig from './pages/admin/AttributesConfig';
 import AdminOrders from './pages/admin/Orders';
 import AdminUsers from './pages/admin/Users';
+import AdminCoupons from './pages/admin/Coupons';
+import CouponForm from './pages/admin/CouponForm';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import SocialCallback from './pages/auth/SocialCallback';
@@ -80,6 +82,9 @@ function App() {
              <Route path="products/:id/variants" element={<ProductVariants />} />
              <Route path="orders" element={<AdminOrders />} />
              <Route path="attributes" element={<AttributesConfig />} />
+             <Route path="coupons" element={<AdminCoupons />} />
+             <Route path="coupons/create" element={<CouponForm />} />
+             <Route path="coupons/:id/edit" element={<CouponForm />} />
              <Route path="users" element={<AdminUsers />} />
              <Route path="settings" element={<Placeholder title="Cài đặt hệ thống Cửa hàng" />} />
           </Route>

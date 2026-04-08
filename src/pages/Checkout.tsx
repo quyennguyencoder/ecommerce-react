@@ -12,7 +12,7 @@ import { ShippingMethod, PaymentMethod, Gender } from '../types/enums';
 import { cartService } from '../services/cartService';
 import { orderService } from '../services/orderService';
 import { paymentService } from '../services/paymentService';
-import type { CartResponse } from '../types';
+import type { CartResponse, OrderCalculationResponse } from '../types';
 
 const checkoutSchema = z.object({
   name: z.string().min(2, 'Tên người nhận phải có ít nhất 2 ký tự').max(50),
@@ -32,11 +32,33 @@ const Checkout = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isFetchingCart, setIsFetchingCart] = useState(true);
   const [cartData, setCartData] = useState<CartResponse | null>(null);
+  const [cartItemIds, setCartItemIds] = useState<number[]>([]);
+  const [calculation, setCalculation] = useState<OrderCalculationResponse | null>(null);
+  const [isCalculating, setIsCalculating] = useState(false);
+  const [appliedCouponCode, setAppliedCouponCode] = useState('');
   
   const navigate = useNavigate();
   const location = useLocation();
   const state = location.state;
   
+  const methods = useForm<CheckoutFormValues>({
+    resolver: zodResolver(checkoutSchema),
+    defaultValues: {
+      name: '',
+      gender: '',
+      phone: '',
+      email: '',
+      address: '',
+      note: '',
+      couponCode: '',
+      shippingMethod: ShippingMethod.STANDARD,
+      paymentMethod: PaymentMethod.COD,
+    },
+    mode: 'onTouched',
+  });
+
+  const selectedShippingMethod = methods.watch('shippingMethod');
+
   useEffect(() => {
     const loadCart = async () => {
       setIsFetchingCart(true);
@@ -55,7 +77,7 @@ const Checkout = () => {
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
           };
-          
+
           setCartData({
             id: -1,
             userId: -1,
@@ -65,9 +87,14 @@ const Checkout = () => {
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
           });
+
+          if (state.buyNowCartItemId) {
+            setCartItemIds([state.buyNowCartItemId]);
+          }
         } else {
           const res = await cartService.getMyCart();
           setCartData(res.data ?? null);
+          setCartItemIds(res.data?.cartItems?.map(cartItem => cartItem.id) ?? []);
         }
       } catch (err) {
         console.error('Failed to load cart for checkout:', err);
@@ -75,26 +102,50 @@ const Checkout = () => {
         setIsFetchingCart(false);
       }
     };
-    
+
     loadCart();
     window.scrollTo(0, 0);
   }, [state]);
 
-  const methods = useForm<CheckoutFormValues>({
-    resolver: zodResolver(checkoutSchema),
-    defaultValues: {
-      name: '',
-      gender: '',
-      phone: '',
-      email: '',
-      address: '',
-      note: '',
-      couponCode: '',
-      shippingMethod: ShippingMethod.STANDARD,
-      paymentMethod: PaymentMethod.COD,
-    },
-    mode: 'onTouched',
-  });
+  const calculateTotalPrice = async (couponCode?: string) => {
+    if (cartItemIds.length === 0) return;
+
+    const values = methods.getValues();
+    const trimmedCoupon = couponCode?.trim();
+    const request = {
+      name: values.name?.trim() || 'Khach hang',
+      gender: values.gender ? (values.gender as Gender) : undefined,
+      phone: values.phone?.trim() || '0000000000',
+      email: values.email?.trim() || undefined,
+      shippingAddress: values.address?.trim() || 'Chua cap nhat',
+      note: values.note?.trim() || undefined,
+      shippingMethod: values.shippingMethod,
+      couponCode: trimmedCoupon ? trimmedCoupon : undefined,
+      cartItemIds,
+      paymentMethod: values.paymentMethod,
+    };
+
+    setIsCalculating(true);
+    try {
+      const res = await orderService.calculateTotalPrice(request);
+      setCalculation(res.data ?? null);
+    } catch (error) {
+      console.error('Failed to calculate order total:', error);
+    } finally {
+      setIsCalculating(false);
+    }
+  };
+
+  useEffect(() => {
+    if (cartItemIds.length === 0) return;
+    calculateTotalPrice(appliedCouponCode);
+  }, [cartItemIds, selectedShippingMethod]);
+
+  const handleApplyCoupon = async () => {
+    const coupon = methods.getValues('couponCode')?.trim() || '';
+    setAppliedCouponCode(coupon);
+    await calculateTotalPrice(coupon);
+  };
 
   const onSubmit = async (data: CheckoutFormValues) => {
     if (!cartData) return;
@@ -104,7 +155,9 @@ const Checkout = () => {
       let finalCartItemIds: number[] = [];
       const isBuyNow = state?.isBuyNow && !!state?.buyNowItem;
 
-      if (isBuyNow) {
+      if (cartItemIds.length > 0) {
+        finalCartItemIds = cartItemIds;
+      } else if (isBuyNow) {
         // "Mua ngay" xử lý ngầm: thêm vào giỏ hàng để có entity ID hợp lệ trước khi order
         const res = await cartService.addToCart({
           variantId: state.buyNowItem.variant.id,
@@ -128,9 +181,6 @@ const Checkout = () => {
         return;
       }
 
-      const shippingFee = data.shippingMethod === ShippingMethod.EXPRESS ? 50000 : 30000;
-      const total = cartData.totalPrice + shippingFee;
-
       const orderRequest = {
         name: data.name,
         gender: data.gender ? (data.gender as Gender) : undefined,
@@ -139,8 +189,6 @@ const Checkout = () => {
         shippingAddress: data.address,
         note: data.note,
         shippingMethod: data.shippingMethod,
-        shippingFee: shippingFee,
-        total: total,
         couponCode: data.couponCode,
         cartItemIds: finalCartItemIds,
         paymentMethod: data.paymentMethod,
@@ -199,7 +247,14 @@ const Checkout = () => {
           {/* Right Column: Order Summary */}
           <div className="w-full lg:w-1/3 relative">
             {cartData ? (
-              <OrderSummary cart={cartData} isLoading={isLoading || isFetchingCart} />
+              <OrderSummary
+                cart={cartData}
+                isLoading={isLoading || isFetchingCart}
+                calculation={calculation}
+                isCalculating={isCalculating}
+                onApplyCoupon={handleApplyCoupon}
+                appliedCouponCode={appliedCouponCode}
+              />
             ) : isFetchingCart ? (
               <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex justify-center py-12">
                 <div className="w-8 h-8 rounded-full border-4 border-slate-200 border-t-indigo-600 animate-spin"></div>

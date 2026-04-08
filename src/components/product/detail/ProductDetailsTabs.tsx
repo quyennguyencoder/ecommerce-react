@@ -5,9 +5,20 @@ import type { FeedbackResponse } from '../../../types/responses';
 interface ProductDetailsTabsProps {
   description: string;
   reviews: FeedbackResponse[];
+  canReview?: boolean;
+  isSubmittingReview?: boolean;
+  onSubmitReview?: (payload: { star: number; content?: string }) => void;
+  onRequestLogin?: () => void;
 }
 
-const ProductDetailsTabs = ({ description, reviews }: ProductDetailsTabsProps) => {
+const ProductDetailsTabs = ({
+  description,
+  reviews,
+  canReview,
+  isSubmittingReview,
+  onSubmitReview,
+  onRequestLogin,
+}: ProductDetailsTabsProps) => {
   const [activeTab, setActiveTab] = useState<'desc' | 'reviews'>('desc');
 
   return (
@@ -52,7 +63,13 @@ const ProductDetailsTabs = ({ description, reviews }: ProductDetailsTabsProps) =
         
         {activeTab === 'reviews' && (
           <div className="animate-fade-in">
-            <ProductReviews reviews={reviews} />
+            <ProductReviews
+              reviews={reviews}
+              canReview={canReview}
+              isSubmitting={isSubmittingReview}
+              onSubmitReview={onSubmitReview}
+              onRequestLogin={onRequestLogin}
+            />
           </div>
         )}
       </div>

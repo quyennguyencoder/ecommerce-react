@@ -1,4 +1,4 @@
-import { Gender, ShippingMethod, PaymentMethod } from './enums';
+import { Gender, ShippingMethod, PaymentMethod, DiscountType } from './enums';
 
 export interface AuthLoginRequest {
   emailOrPhone: string;
@@ -87,8 +87,6 @@ export interface OrderCreateRequest {
   shippingAddress: string;
   note?: string;
   shippingMethod?: ShippingMethod;
-  shippingFee?: number;
-  total: number;
   couponCode?: string;
   cartItemIds: number[];
   paymentMethod: PaymentMethod;
@@ -133,4 +131,29 @@ export interface PaymentUrlCreateRequest {
   orderId: number;
   bankCode: string;
   language: string;
+}
+
+export interface CouponCreateRequest {
+  code: string;
+  discountType: DiscountType;
+  discountValue: number;
+  minOrderValue?: number;
+  maxDiscount?: number;
+  usageLimit?: number;
+  startDate: string; // ISO DateTime string
+  endDate: string; // ISO DateTime string
+  active: boolean;
+}
+
+export interface CouponUpdateRequest {
+  code?: string;
+  discountType?: DiscountType;
+  discountValue?: number;
+  minOrderValue?: number;
+  maxDiscount?: number;
+  usageLimit?: number;
+  usedCount?: number;
+  startDate?: string; // ISO DateTime string
+  endDate?: string; // ISO DateTime string
+  active?: boolean;
 }

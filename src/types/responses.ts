@@ -1,4 +1,4 @@
-import { Gender, OrderStatus, ShippingMethod, PaymentMethod, PaymentStatus, TransactionStatus } from './enums';
+import { Gender, OrderStatus, ShippingMethod, PaymentMethod, PaymentStatus, TransactionStatus, DiscountType } from './enums';
 
 export interface AttributeResponse {
   id: number;
@@ -181,6 +181,30 @@ export interface TransactionResponse {
   paymentMethod: PaymentMethod;
   transactionStatus: TransactionStatus;
   orderId: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface OrderCalculationResponse {
+  subTotal: number;
+  discountAmount: number;
+  shippingFee: number;
+  finalTotal: number;
+  isCouponValid: boolean;
+}
+
+export interface CouponResponse {
+  id: number;
+  code: string;
+  discountType: DiscountType;
+  discountValue: number;
+  minOrderValue: number;
+  maxDiscount: number;
+  usageLimit: number;
+  usedCount: number;
+  startDate: string; // ISO DateTime string
+  endDate: string; // ISO DateTime string
+  active: boolean;
   createdAt: string;
   updatedAt: string;
 }
