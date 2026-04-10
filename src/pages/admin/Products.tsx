@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, Plus, Edit2, Trash2, LayoutGrid, AlertCircle, ShoppingBag, Layers } from 'lucide-react';
+import { Search, Plus, Edit2, Trash2, LayoutGrid, AlertCircle, ShoppingBag, Layers, Image as ImageIcon } from 'lucide-react';
 import { productService } from '../../services/productService';
 import type { ProductResponse } from '../../types';
 import { getImageUrl } from '../../utils/image';
@@ -176,6 +176,13 @@ const AdminProducts = () => {
                           title="Quản lý biến thể (SKU)"
                         >
                           <Layers size={18} />
+                        </Link>
+                        <Link 
+                          to={`/admin/products/${product.id}/images`}
+                          className="p-2 text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                          title="Quản lý ảnh sản phẩm"
+                        >
+                          <ImageIcon size={18} />
                         </Link>
                         <Link 
                           to={`/admin/products/${product.id}/edit`}

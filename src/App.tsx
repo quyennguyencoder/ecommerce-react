@@ -17,6 +17,7 @@ import PaymentResult from './pages/PaymentResult';
 import AdminProducts from './pages/admin/Products';
 import ProductForm from './pages/admin/ProductForm';
 import ProductVariants from './pages/admin/ProductVariants';
+import ProductImages from './pages/admin/ProductImages';
 import AttributesConfig from './pages/admin/AttributesConfig';
 import AdminOrders from './pages/admin/Orders';
 import AdminUsers from './pages/admin/Users';
@@ -80,6 +81,7 @@ function App() {
              <Route path="products/create" element={<ProductForm />} />
              <Route path="products/:id/edit" element={<ProductForm />} />
              <Route path="products/:id/variants" element={<ProductVariants />} />
+             <Route path="products/:id/images" element={<ProductImages />} />
              <Route path="orders" element={<AdminOrders />} />
              <Route path="attributes" element={<AttributesConfig />} />
              <Route path="coupons" element={<AdminCoupons />} />
