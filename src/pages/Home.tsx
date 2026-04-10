@@ -62,7 +62,7 @@ export default function Home() {
             Bo suu tap moi
           </span>
           <h1 className="mt-4 text-3xl font-semibold leading-tight sm:text-4xl">
-            Chao mung{userName ? `, ${userName}` : ''} den voi ecommerce
+            Chao mung{userName ? `, ${userName}` : ''} den voi Ecom
           </h1>
           <p className="mt-3 max-w-2xl text-sm text-white/80">
             Kham pha bo suu tap san pham da dang, cap nhat xu huong moi nhat va
