@@ -7,6 +7,7 @@ import { LogIn, AlertCircle } from 'lucide-react';
 
 import { authService } from '../../services/authService';
 import { setAuthSession } from '../../utils/authStorage';
+import { scheduleTokenRefresh } from '../../utils/tokenRefresh';
 import { getApiErrorMessage } from '../../utils/apiError';
 import { SocialLoginType } from '../../types';
 
@@ -56,6 +57,7 @@ const Login = () => {
         return;
       }
       setAuthSession(loginData);
+      scheduleTokenRefresh(loginData.expiresIn);
       navigate(redirectTo.startsWith('/') ? redirectTo : '/', { replace: true });
     } catch (err) {
       setServerError(getApiErrorMessage(err, 'Đăng nhập thất bại.'));

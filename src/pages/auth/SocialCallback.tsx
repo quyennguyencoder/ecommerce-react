@@ -4,6 +4,7 @@ import { Loader2, AlertCircle } from 'lucide-react';
 
 import { authService } from '../../services/authService';
 import { setAuthSession } from '../../utils/authStorage';
+import { scheduleTokenRefresh } from '../../utils/tokenRefresh';
 import { getApiErrorMessage } from '../../utils/apiError';
 import { SocialLoginType } from '../../types';
 
@@ -70,6 +71,7 @@ export default function SocialCallback({ provider }: SocialCallbackProps) {
           return;
         }
         setAuthSession(loginData);
+        scheduleTokenRefresh(loginData.expiresIn);
         navigate(redirectTo.startsWith('/') ? redirectTo : '/', { replace: true });
       } catch (err) {
         setStatus('error');
