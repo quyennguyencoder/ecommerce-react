@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Package, Clock, Truck, CheckCircle2, XCircle, CreditCard, ShoppingBag, MapPin, SearchX } from 'lucide-react';
 import { orderService } from '../services/orderService';
+import { paymentService } from '../services/paymentService';
 import type { OrderResponse } from '../types/responses';
-import { OrderStatus, PaymentStatus } from '../types/enums';
+import { OrderStatus, PaymentMethod, PaymentStatus } from '../types/enums';
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
@@ -38,6 +39,7 @@ const Orders = () => {
   const [orders, setOrders] = useState<OrderResponse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [repayingId, setRepayingId] = useState<number | null>(null);
   
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
@@ -60,6 +62,31 @@ const Orders = () => {
     fetchOrders();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [currentPage]);
+
+  const handleRepay = async (order: OrderResponse) => {
+    if (order.paymentMethod !== PaymentMethod.VNPAY || order.paymentStatus !== PaymentStatus.UNPAID) {
+      return;
+    }
+
+    try {
+      setRepayingId(order.id);
+      const paymentRes = await paymentService.createPaymentUrl({
+        orderId: order.id,
+        bankCode: '',
+        language: 'vn',
+      });
+      const paymentUrl = paymentRes.data?.paymentUrl;
+      if (!paymentUrl) {
+        throw new Error('Không lấy được đường dẫn thanh toán VNPAY');
+      }
+      window.location.href = paymentUrl;
+    } catch (err) {
+      console.error('Lỗi tạo thanh toán VNPAY:', err);
+      alert('Không thể tạo lại thanh toán VNPAY. Vui lòng thử lại.');
+    } finally {
+      setRepayingId(null);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -126,6 +153,19 @@ const Orders = () => {
                      <span className={`text-xs font-semibold px-2 py-0.5 rounded ${order.paymentStatus === PaymentStatus.PAID ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
                        {order.paymentStatus}
                      </span>
+                     {order.paymentMethod === PaymentMethod.VNPAY && order.paymentStatus === PaymentStatus.UNPAID ? (
+                       <button
+                         type="button"
+                         onClick={() => handleRepay(order)}
+                         disabled={repayingId === order.id}
+                         className="inline-flex items-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 disabled:opacity-60 disabled:cursor-not-allowed"
+                       >
+                         {repayingId === order.id ? (
+                           <span className="w-3 h-3 border-2 border-indigo-300 border-t-indigo-700 rounded-full animate-spin" />
+                         ) : null}
+                         Thanh toán lại
+                       </button>
+                     ) : null}
                   </div>
                 </div>
                 <div>

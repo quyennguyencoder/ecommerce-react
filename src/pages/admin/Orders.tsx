@@ -14,8 +14,9 @@ import {
   User,
 } from 'lucide-react';
 import { orderService } from '../../services/orderService';
+import { paymentService } from '../../services/paymentService';
 import type { OrderResponse } from '../../types/responses';
-import { OrderStatus, PaymentStatus } from '../../types/enums';
+import { OrderStatus, PaymentMethod, PaymentStatus } from '../../types/enums';
 
 const formatCurrency = (amount: number) =>
   new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
@@ -108,6 +109,7 @@ const AdminOrders = () => {
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('ALL');
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [updatingId, setUpdatingId] = useState<number | null>(null);
+  const [repayingId, setRepayingId] = useState<number | null>(null);
 
   const fetchOrders = useCallback(async () => {
     try {
@@ -158,6 +160,31 @@ const AdminOrders = () => {
 
   const toggleExpand = (id: number) => {
     setExpandedId((prev) => (prev === id ? null : id));
+  };
+
+  const handleRepay = async (order: OrderResponse) => {
+    if (order.paymentMethod !== PaymentMethod.VNPAY || order.paymentStatus !== PaymentStatus.UNPAID) {
+      return;
+    }
+
+    try {
+      setRepayingId(order.id);
+      const paymentRes = await paymentService.createPaymentUrl({
+        orderId: order.id,
+        bankCode: '',
+        language: 'vn',
+      });
+      const paymentUrl = paymentRes.data?.paymentUrl;
+      if (!paymentUrl) {
+        throw new Error('Không lấy được đường dẫn thanh toán VNPAY');
+      }
+      window.open(paymentUrl, '_blank', 'noopener,noreferrer');
+    } catch (err) {
+      console.error('Lỗi tạo thanh toán VNPAY:', err);
+      alert('Không thể tạo lại thanh toán VNPAY. Vui lòng thử lại.');
+    } finally {
+      setRepayingId(null);
+    }
   };
 
   return (
@@ -284,6 +311,20 @@ const AdminOrders = () => {
                           <p className="text-xs text-slate-500 mt-1 flex items-center gap-1">
                             <CreditCard size={12} /> {order.paymentMethod}
                           </p>
+                          {order.paymentMethod === PaymentMethod.VNPAY &&
+                          order.paymentStatus === PaymentStatus.UNPAID ? (
+                            <button
+                              type="button"
+                              onClick={() => handleRepay(order)}
+                              disabled={repayingId === order.id}
+                              className="mt-2 inline-flex items-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 disabled:opacity-60 disabled:cursor-not-allowed"
+                            >
+                              {repayingId === order.id ? (
+                                <span className="w-3 h-3 border-2 border-indigo-300 border-t-indigo-700 rounded-full animate-spin" />
+                              ) : null}
+                              Thanh toán lại
+                            </button>
+                          ) : null}
                         </td>
                         <td className="py-4 px-4">
                           {isTerminal || next.length === 0 ? (
