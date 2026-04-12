@@ -57,7 +57,7 @@ api.interceptors.request.use((config) => {
   const token = getAccessToken();
 
   if (token && !config.headers?.Authorization) {
-    const headers = config.headers ?? new AxiosHeaders();
+    const headers = AxiosHeaders.from(config.headers ?? {});
     headers.set('Authorization', `Bearer ${token}`);
     config.headers = headers;
   }
@@ -90,7 +90,9 @@ api.interceptors.response.use(
         return Promise.reject(error);
       }
 
-      const headers = originalRequest.headers ?? new AxiosHeaders();
+      const headers = AxiosHeaders.from(
+        originalRequest.headers as AxiosHeaders | Record<string, string> | undefined
+      );
       headers.set('Authorization', `Bearer ${newToken}`);
       originalRequest.headers = headers;
 
